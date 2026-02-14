@@ -50,7 +50,7 @@ The model also uses **sliding window attention (SWA)** on half its layers (18 of
 
 ## Working Configuration
 
-For a ready-to-use config, see `.env.gpt-oss-120b` in the project root. The key parameters:
+For a ready-to-use config, see `[gpt-oss-120b]` in `models.conf`, or run `./start.sh gpt-oss-120b`. The key parameters:
 
 ```bash
 MODEL=GPT-OSS-120b/gpt-oss-120b-F16.gguf \

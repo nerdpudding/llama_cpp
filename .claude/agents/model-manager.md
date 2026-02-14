@@ -74,9 +74,9 @@ For this hardware (40 GB total VRAM, 64 GB RAM):
 
 **After downloading a new model:**
 
-1. Create a matching `.env.<model>` config file
+1. Add a new `[section]` to `models.conf` with the model's settings
 2. Update `README.md` target models table if appropriate
-3. Test: `cp .env.<model> .env && docker compose up`
+3. Test: `./start.sh <section-id>`
 
 ## Files you own
 
