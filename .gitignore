@@ -6,3 +6,6 @@
 
 # llama.cpp source (has its own git repo, pulled independently)
 llama.cpp/
+
+# Python bytecode
+__pycache__/
