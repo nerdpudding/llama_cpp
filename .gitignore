@@ -1,0 +1,8 @@
+# GGUF model files (large binaries)
+**/*.gguf
+
+# Active environment config (user copies from .env.* templates)
+.env
+
+# llama.cpp source (has its own git repo, pulled independently)
+llama.cpp/

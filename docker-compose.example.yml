@@ -1,0 +1,91 @@
+# =============================================================================
+# llama.cpp server -- RTX 4090 + RTX 5070 Ti
+#
+# HOW TO USE:
+#
+# 1. Pick a model config:
+#      cp .env.qwen3-coder .env          # Qwen3-Coder-Next UD-Q6_K_XL (baseline)
+#      cp .env.qwen3-coder-q6k .env      # Qwen3-Coder-Next Q6_K (non-UD)
+#      cp .env.glm-flash .env            # GLM-4.7 Flash Q8_0 (fits in VRAM)
+#      cp .env.gpt-oss-120b .env         # GPT-OSS 120B (MoE, partial CPU offload)
+#
+# 2. Start the server:
+#      docker compose up
+#
+# 3. Access:
+#      Web UI:  http://localhost:8080
+#      API:     http://localhost:8080/v1/chat/completions
+#
+# SWITCHING MODELS:
+#      docker compose down
+#      cp .env.<model> .env
+#      docker compose up
+#
+# AVAILABLE .env FILES:
+#
+#   .env.qwen3-coder     - Qwen3-Coder-Next UD-Q6_K_XL, 256K ctx, 21.4 t/s
+#   .env.qwen3-coder-q6k - Qwen3-Coder-Next Q6_K, 256K ctx
+#   .env.glm-flash       - GLM-4.7 Flash Q8_0, 128K ctx, fits entirely in VRAM
+#   .env.gpt-oss-120b    - GPT-OSS 120B F16 (MXFP4), 64K ctx, ~20 t/s
+#   .env.example          - Generic template with all variables documented
+#
+# VARIABLE REFERENCE:
+#
+#   MODEL           Path to .gguf file relative to models/ dir
+#   CTX_SIZE        Context window size in tokens
+#   N_GPU_LAYERS    Number of layers to offload to GPU (99 = all)
+#   SPLIT_MODE      Multi-GPU split: layer (default), row, none
+#   TENSOR_SPLIT    Manual split ratio (blank = auto)
+#   MAIN_GPU        Primary GPU index (0 = RTX 4090)
+#   FLASH_ATTN      Flash attention (1 = on)
+#   KV_CACHE_TYPE_K KV cache key type (q8_0 recommended)
+#   KV_CACHE_TYPE_V KV cache value type (q8_0 recommended)
+#   FIT             Auto-fit VRAM (on/off, use off with -ot)
+#   FIT_TARGET      VRAM headroom in MiB per device
+#   FIT_CTX         Minimum context size for auto-fit
+#   EXTRA_ARGS      Any additional llama-server flags
+#
+# =============================================================================
+
+services:
+  llama-server:
+    build: .
+    container_name: llama-server
+    ports:
+      - "8080:8080"
+    volumes:
+      - ./models:/models:ro
+    deploy:
+      resources:
+        reservations:
+          devices:
+            - driver: nvidia
+              count: all
+              capabilities: [gpu]
+    environment:
+      # ---- Model ----
+      - MODEL=/models/${MODEL:-model.gguf}
+      # ---- Context ----
+      - CTX_SIZE=${CTX_SIZE:-131072}
+      # ---- GPU offload ----
+      - N_GPU_LAYERS=${N_GPU_LAYERS:-99}
+      # ---- Split mode: layer (default), row, none ----
+      - SPLIT_MODE=${SPLIT_MODE:-layer}
+      # ---- Manual tensor split ratio (blank = use --fit auto) ----
+      - TENSOR_SPLIT=${TENSOR_SPLIT:-}
+      # ---- Main GPU (0 = RTX 4090, 1 = RTX 5070 Ti) ----
+      - MAIN_GPU=${MAIN_GPU:-0}
+      # ---- Flash attention ----
+      - FLASH_ATTN=${FLASH_ATTN:-1}
+      # ---- KV cache quantization ----
+      - KV_CACHE_TYPE_K=${KV_CACHE_TYPE_K:-q8_0}
+      - KV_CACHE_TYPE_V=${KV_CACHE_TYPE_V:-q8_0}
+      # ---- Auto-fit (on by default, adjusts layers/ctx to fit VRAM) ----
+      - FIT=${FIT:-on}
+      # ---- Fit target: VRAM headroom in MiB per device (e.g. 1024 or 512,4096) ----
+      - FIT_TARGET=${FIT_TARGET:-}
+      # ---- Fit minimum context size ----
+      - FIT_CTX=${FIT_CTX:-}
+      # ---- Extra flags (pass anything not covered above) ----
+      - EXTRA_ARGS=${EXTRA_ARGS:-}
+    restart: unless-stopped

@@ -1,0 +1,13 @@
+# Ignore everything except the llama.cpp source directory
+*
+!llama.cpp/
+
+# Within llama.cpp, exclude non-essential files
+llama.cpp/.git
+llama.cpp/build
+llama.cpp/.cache
+llama.cpp/models
+llama.cpp/.devops
+llama.cpp/.github
+llama.cpp/docs
+llama.cpp/*.md
