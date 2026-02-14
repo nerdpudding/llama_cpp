@@ -236,6 +236,31 @@ Document:
 
 ---
 
+## Findings
+
+### GLM-4.7 Flash: empty solutions (2026-02-14)
+
+The smoke test with `bench-glm-flash-q4` completed the full pipeline (codegen + Docker sandbox evaluation) but scored only **4.3% pass@1** — 7 out of 164 problems. Investigation revealed all solutions were empty strings.
+
+**Root cause:** GLM-4.7 Flash is a reasoning model. It returns its chain-of-thought in the `reasoning_content` field and the actual answer in the `content` field of the API response. Two problems:
+
+1. **EvalPlus reads only `message.content`**, not `reasoning_content` — so it sees an empty answer.
+2. **The 768 max_tokens budget is consumed entirely by reasoning** (`finish_reason: length`), so the model never produces an actual answer in `content`.
+
+Verified with a direct API call — the model generates a full correct solution inside `reasoning_content` but `content` is empty.
+
+**Affects:** Both GLM Flash profiles (bench-glm-flash-q4 and bench-glm-flash). Does NOT affect Qwen3-Coder-Next (explicitly non-thinking model per model card: "This model supports only non-thinking mode") or GPT-OSS 120B (reasoning effort is configurable via system prompt, not a separate field).
+
+**Possible fixes (to investigate later):**
+- Increase max_tokens significantly so the model has budget left after reasoning for the actual answer
+- Disable thinking mode if llama.cpp supports it for GLM (e.g. omit `--reasoning-parser`)
+- Patch evalplus to concatenate `reasoning_content` + `content`, or extract code from the reasoning field
+- Use a non-reasoning GLM variant if available
+
+**Status:** Parked. Proceeding with Qwen3 and GPT-OSS benchmarks first.
+
+---
+
 ## Files to create/modify
 
 | File | Action |
