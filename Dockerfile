@@ -33,6 +33,7 @@ FROM nvidia/cuda:13.0.0-runtime-ubuntu24.04
 
 RUN apt-get update && \
     apt-get install -y --no-install-recommends \
+        curl \
         libcurl4t64 \
         libgomp1 \
     && rm -rf /var/lib/apt/lists/*

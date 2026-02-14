@@ -12,6 +12,8 @@ Seven models are configured in `models.conf` and selectable via `./start.sh` on 
 
 MoE models use optimized `-ot` regex configurations for per-layer GPU/CPU tensor placement. Tested configurations are documented in `docs/` with memory breakdowns, VRAM utilization, and performance data.
 
+**Monitoring dashboard:** `start.sh` now launches the container in the background, waits for server health, and opens a Python curses TUI (`dashboard.py`) with four panels: server logs (scrollable), per-GPU VRAM/utilization/power/temp monitoring, system stats (CPU/RAM/swap/container), and keyboard controls (`q` stop & exit, `r` stop & return to menu). Docker healthcheck is also configured for container-level health awareness. Use `--no-dashboard` for raw log output.
+
 ## Next Up
 
 ### Formal benchmarks

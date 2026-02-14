@@ -61,7 +61,8 @@ Ollama doesn't support the features needed for this hardware and these models:
 ├── .dockerignore
 ├── .gitignore
 ├── models.conf                    # Central model configuration (all models)
-├── start.sh                       # Model selector script (generates .env)
+├── start.sh                       # Model selector script (generates .env, launches dashboard)
+├── dashboard.py                   # Terminal monitoring dashboard (curses TUI)
 ├── .env.example                   # Generic template with all variables documented
 ├── docs/
 │   ├── gpt-oss-120b-configuration-guide.md
@@ -125,9 +126,14 @@ Ollama doesn't support the features needed for this hardware and these models:
    ```bash
    ./start.sh
    ```
-   Pick a model from the menu — the script generates `.env` and starts docker compose.
+   Pick a model from the menu — the script generates `.env`, starts the container, waits for the server to be ready, and opens a monitoring dashboard with server logs, GPU stats, and system stats.
 
-2. Access:
+2. Dashboard controls:
+   - **`q`** — Stop the server and exit
+   - **`r`** — Stop the server and return to the model menu
+   - **`Up/Down/PgUp/PgDn`** — Scroll server logs
+
+3. Access:
    - **Web UI:** http://localhost:8080
    - **API:** http://localhost:8080/v1/chat/completions
 
@@ -143,9 +149,10 @@ Ollama doesn't support the features needed for this hardware and these models:
 Use the interactive menu or pass a model ID directly:
 
 ```bash
-./start.sh                  # Interactive menu
+./start.sh                  # Interactive menu + monitoring dashboard
 ./start.sh qwen3-coder      # Direct launch (stops running container first)
 ./start.sh --list            # List available models
+./start.sh --no-dashboard   # Launch without dashboard (raw docker compose logs)
 ```
 
 Available models (defined in `models.conf`):

@@ -1,11 +1,12 @@
 #!/usr/bin/env bash
 # =============================================================================
-# start.sh — Model selector for llama.cpp Docker wrapper
+# start.sh — Model selector & dashboard launcher for llama.cpp Docker wrapper
 #
 # Usage:
-#   ./start.sh              # Interactive menu
+#   ./start.sh              # Interactive menu + monitoring dashboard
 #   ./start.sh qwen3-coder  # Direct launch by section ID
 #   ./start.sh --list       # List available models
+#   ./start.sh --no-dashboard  # Launch without dashboard (raw logs)
 # =============================================================================
 
 set -euo pipefail
@@ -14,6 +15,8 @@ SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
 CONF="$SCRIPT_DIR/models.conf"
 MODELS_DIR="$SCRIPT_DIR/models"
 ENV_FILE="$SCRIPT_DIR/.env"
+COMPOSE_FILE="$SCRIPT_DIR/docker-compose.yml"
+DASHBOARD="$SCRIPT_DIR/dashboard.py"
 
 # --- INI parser -----------------------------------------------------------
 # Reads models.conf into parallel arrays. No eval, no external tools.
@@ -97,7 +100,7 @@ check_existing_container() {
         echo "Container 'llama-server' is already running."
         read -rp "Stop it and continue? [y/N] " answer
         if [[ "${answer,,}" == "y" ]]; then
-            docker compose -f "$SCRIPT_DIR/docker-compose.yml" down
+            docker compose -f "$COMPOSE_FILE" down
         else
             echo "Aborted."
             exit 0
@@ -142,10 +145,10 @@ Download it first, then try again."
 # --- Menu -------------------------------------------------------------------
 
 show_menu() {
-    echo ""
-    echo "llama.cpp Model Selector"
-    echo "========================"
-    echo ""
+    echo "" >&2
+    echo "llama.cpp Model Selector" >&2
+    echo "========================" >&2
+    echo "" >&2
 
     for i in "${!SECTION_IDS[@]}"; do
         local id="${SECTION_IDS[$i]}"
@@ -153,29 +156,143 @@ show_menu() {
         local ctx; ctx=$(get "$id" CTX_SIZE)
         local label=""
         [[ -n "$ctx" ]] && label=$(ctx_label "$ctx")
-        printf "  %d) %-48s %s\n" "$((i + 1))" "$name" "$label"
+        printf "  %d) %-48s %s\n" "$((i + 1))" "$name" "$label" >&2
     done
 
-    echo ""
-    echo "  q) Quit"
-    echo ""
+    echo "" >&2
+    echo "  q) Quit" >&2
+    echo "" >&2
 
     local count=${#SECTION_IDS[@]}
     while true; do
         read -rp "Select model [1-${count}]: " choice
         if [[ "$choice" == "q" || "$choice" == "Q" ]]; then
-            echo "Aborted."
+            echo "Aborted." >&2
             exit 0
         fi
         if [[ "$choice" =~ ^[0-9]+$ ]] && (( choice >= 1 && choice <= count )); then
             echo "${SECTION_IDS[$((choice - 1))]}"
             return
         fi
-        echo "Invalid choice. Enter 1-${count} or q to quit."
+        echo "Invalid choice. Enter 1-${count} or q to quit." >&2
     done
 }
 
-# --- Main -------------------------------------------------------------------
+# --- Health check polling ---------------------------------------------------
+
+wait_for_health() {
+    local url="http://localhost:8080/health"
+    local timeout=300  # 5 minutes
+    local elapsed=0
+    local spin=('|' '/' '-' '\')
+    local i=0
+
+    echo -n "Waiting for server to be ready "
+
+    while (( elapsed < timeout )); do
+        # Check if container is still running
+        local state
+        state=$(docker inspect --format='{{.State.Status}}' llama-server 2>/dev/null || echo "missing")
+        if [[ "$state" != "running" ]]; then
+            echo ""
+            echo ""
+            echo "Container stopped unexpectedly. Showing recent logs:"
+            echo ""
+            docker compose -f "$COMPOSE_FILE" logs --tail=30 2>/dev/null || true
+            return 1
+        fi
+
+        if curl -sf "$url" &>/dev/null; then
+            echo -e " \033[1;32mready!\033[0m"
+            return 0
+        fi
+
+        printf "\rWaiting for server to be ready %s " "${spin[$((i % 4))]}"
+        sleep 2
+        elapsed=$((elapsed + 2))
+        i=$((i + 1))
+    done
+
+    echo ""
+    echo "Timeout waiting for server health endpoint after ${timeout}s."
+    echo "The server may still be loading. Showing recent logs:"
+    echo ""
+    docker compose -f "$COMPOSE_FILE" logs --tail=20 2>/dev/null || true
+    return 1
+}
+
+# --- Cleanup ----------------------------------------------------------------
+
+cleanup() {
+    docker compose -f "$COMPOSE_FILE" down 2>/dev/null || true
+}
+
+# --- Dashboard launch -------------------------------------------------------
+
+run_with_dashboard() {
+    local selected="$1"
+    local model_name
+    model_name=$(get "$selected" NAME)
+
+    echo "Starting container in background..."
+    docker compose -f "$COMPOSE_FILE" up -d
+
+    echo ""
+    if ! wait_for_health; then
+        echo ""
+        read -rp "Server may not be ready. Launch dashboard anyway? [Y/n] " answer
+        if [[ "${answer,,}" == "n" ]]; then
+            docker compose -f "$COMPOSE_FILE" down
+            return 1
+        fi
+    fi
+
+    echo "Launching dashboard..."
+    echo ""
+
+    # Set cleanup trap — ensures docker compose down on unexpected exit
+    trap cleanup EXIT HUP TERM INT
+
+    # Run dashboard (blocks until user presses q or r)
+    local rc=0
+    python3 "$DASHBOARD" \
+        --compose-file "$COMPOSE_FILE" \
+        --model-name "$model_name" \
+    || rc=$?
+
+    # Remove trap — we handle cleanup ourselves from here
+    trap - EXIT HUP TERM INT
+
+    case "$rc" in
+        0)
+            # q pressed: stop & exit
+            echo ""
+            echo "Stopping container..."
+            docker compose -f "$COMPOSE_FILE" down
+            echo "Done."
+            return 0
+            ;;
+        2)
+            # r pressed: stop & return to menu
+            echo ""
+            echo "Stopping container..."
+            docker compose -f "$COMPOSE_FILE" down
+            echo ""
+            return 2
+            ;;
+        *)
+            # Unexpected exit
+            echo ""
+            echo "Dashboard exited with code $rc. Stopping container..."
+            docker compose -f "$COMPOSE_FILE" down
+            return 0
+            ;;
+    esac
+}
+
+# =============================================================================
+# Main
+# =============================================================================
 
 [[ ! -f "$CONF" ]] && die "Config file not found: $CONF"
 
@@ -187,18 +304,31 @@ fi
 
 # Handle arguments
 selected=""
+no_dashboard=false
 
-if [[ $# -ge 1 ]]; then
+while [[ $# -gt 0 ]]; do
     case "$1" in
         --list|-l)
             list_models
             exit 0
             ;;
         --help|-h)
-            echo "Usage: $0 [model-id | --list | --help]"
+            echo "Usage: $0 [model-id | --list | --help | --no-dashboard]"
+            echo ""
+            echo "Options:"
+            echo "  --list, -l         List available models"
+            echo "  --no-dashboard     Skip dashboard, show raw docker compose logs"
+            echo "  --help, -h         Show this help"
             echo ""
             list_models
             exit 0
+            ;;
+        --no-dashboard)
+            no_dashboard=true
+            shift
+            ;;
+        -*)
+            die "Unknown option: $1"
             ;;
         *)
             # Direct model ID
@@ -216,26 +346,47 @@ if [[ $# -ge 1 ]]; then
                 list_models >&2
                 exit 1
             fi
+            shift
             ;;
     esac
-fi
+done
 
 check_docker
 
-# Interactive menu if no model specified
-if [[ -z "$selected" ]]; then
-    selected=$(show_menu)
-fi
+# --- Main loop (supports return-to-menu via 'r' key) ---
 
-echo ""
-echo "Selected: $(get "$selected" NAME)"
+while true; do
+    # Interactive menu if no model specified
+    if [[ -z "$selected" ]]; then
+        selected=$(show_menu)
+    fi
 
-check_model_file "$selected"
-check_existing_container
-generate_env "$selected"
+    echo ""
+    echo "Selected: $(get "$selected" NAME)"
 
-echo "Generated .env for [$selected]"
-echo "Starting docker compose..."
-echo ""
+    check_model_file "$selected"
+    check_existing_container
+    generate_env "$selected"
 
-exec docker compose -f "$SCRIPT_DIR/docker-compose.yml" up
+    echo "Generated .env for [$selected]"
+
+    # Decide launch mode
+    if [[ "$no_dashboard" == true ]] || [[ ! -f "$DASHBOARD" ]]; then
+        echo "Starting docker compose..."
+        echo ""
+        exec docker compose -f "$COMPOSE_FILE" up
+    fi
+
+    # Launch with dashboard
+    rc=0
+    run_with_dashboard "$selected" || rc=$?
+
+    if [[ $rc -eq 2 ]]; then
+        # Return to menu
+        selected=""
+        continue
+    fi
+
+    # Normal exit
+    break
+done

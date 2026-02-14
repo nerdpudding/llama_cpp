@@ -1,239 +1,100 @@
-# Plan: Project Organization & Documentation
+# Plan: Central Model Config + Start Script
 
 ## Context
 
-This project wraps llama.cpp with a custom Docker build optimized for a dual-GPU desktop (RTX 4090 + RTX 5070 Ti). The project has outgrown its initial structure: model files are now in subdirectories, two key guides have outdated paths, there's no README, no git repo, and the docker-compose.example is an unused duplicate. This plan brings everything into a clean, documented state.
+The project has 7 models on disk but only 4 `.env.*` config files. Switching models requires manually copying `.env` files. As more models get added, this approach doesn't scale — it's easy to forget which `.env` to use, configs are scattered across multiple files, and adding a new model means creating yet another file plus updating docs.
+
+This plan replaces the per-model `.env.*` files with a single `models.conf` and a `start.sh` menu script that reads it, presents a selector, generates `.env`, and runs docker compose.
 
 ---
 
-## Step 1: Rename model directory with space
+## Step 1: Create `models.conf`
 
-The directory `models/GLM 4.7 Flash/` contains a space that breaks the Dockerfile CMD (line 80: `exec llama-server ${ARGS}` — unquoted expansion causes word splitting).
+Single INI-style config file with all 7 models. Format chosen over JSON (no comments, regex escaping issues) and YAML (needs yq). Pure bash parsing, zero dependencies.
 
-**Action:** Rename `models/GLM 4.7 Flash/` to `models/GLM-4.7-Flash/`
+Each `[section]` is a model. Required field: `NAME`, `MODEL`. All other fields optional (docker-compose.yml defaults apply when omitted).
 
-Current contents after user cleanup:
-- `GLM-4.7-Flash-Q4_K_M.gguf`
-- `GLM-4.7-Flash-Q8_0.gguf`
-- `other/GLM-4.7-Flash-experimental.Q8_0.gguf`
+**Models to include:**
 
----
+| Section ID | Name | Model File | Status |
+|-----------|------|------------|--------|
+| `glm-flash-q4` | GLM-4.7 Flash Q4_K_M | `GLM-4.7-Flash/GLM-4.7-Flash-Q4_K_M.gguf` | New |
+| `glm-flash` | GLM-4.7 Flash Q8_0 | `GLM-4.7-Flash/GLM-4.7-Flash-Q8_0.gguf` | From `.env.glm-flash` |
+| `glm-flash-exp` | GLM-4.7 Flash Q8_0 (experimental) | `GLM-4.7-Flash/other/GLM-4.7-Flash-experimental.Q8_0.gguf` | New |
+| `gpt-oss-120b` | GPT-OSS 120B F16 | `GPT-OSS-120b/gpt-oss-120b-F16.gguf` | From `.env.gpt-oss-120b` |
+| `qwen3-coder-q5` | Qwen3-Coder-Next UD-Q5_K_XL (speed) | `Qwen3-Coder-Next/UD-Q5_K_XL/...` | New (config from docs strategy 3) |
+| `qwen3-coder` | Qwen3-Coder-Next UD-Q6_K_XL (baseline) | `Qwen3-Coder-Next/UD-Q6_K_XL/...` | From `.env.qwen3-coder` |
+| `qwen3-coder-q6k` | Qwen3-Coder-Next Q6_K | `Qwen3-Coder-Next/Q6_K/...` | From `.env.qwen3-coder-q6k` |
 
-## Step 2: Create `docs/` with English guides
-
-Both documents will have a clear Table of Contents at the top and consistent markdown formatting.
-
-### 2a: `docs/gpt-oss-120b-configuration-guide.md`
-
-**Source:** `gpt-oss-120b-desktop-guide_WORKING.md` (already English)
-
-Changes:
-- Add TOC at the top
-- Fix model path: `MODEL=GPT-OSS-120b/gpt-oss-120b-F16.gguf`
-- Clean up informal "wait, actually" phrasing (line ~101 area)
-- Add cross-reference to `.env.gpt-oss-120b` for ready-to-use config
-- Keep all sections: Hardware, Model explanation, Architecture, Working Config, Memory Breakdown, Performance, Failed Attempts, Headroom, DGX Spark Comparison
-
-### 2b: `docs/llama-cpp-flags-and-qwen3-strategy.md`
-
-**Source:** `llama-cpp-flags-en-qwen-strategie.md` (Dutch, 575 lines)
-
-Changes:
-- Add TOC at the top
-- Full translation to English (prose sections; code blocks/tables/regex stay as-is)
-- Fix all model paths to subdirectory structure:
-  - `MODEL=Qwen3-Coder-Next/UD-Q6_K_XL/Qwen3-Coder-Next-UD-Q6_K_XL-00001-of-00003.gguf`
-  - `MODEL=Qwen3-Coder-Next/UD-Q5_K_XL/Qwen3-Coder-Next-UD-Q5_K_XL-00001-of-00003.gguf`
-  - `MODEL=Qwen3-Coder-Next/Q6_K/Qwen3-Coder-Next-Q6_K-00001-of-00003.gguf` (non-UD variant)
-  - `MODEL=GPT-OSS-120b/gpt-oss-120b-F16.gguf`
-- Add cross-reference to `.env.qwen3-coder` and `.env.qwen3-coder-q6k`
-- Preserve all `-ot` regex lookup tables, strategy test results, KV cache data, architecture comparison
-
-### 2c: Archive originals
-
-- `mv gpt-oss-120b-desktop-guide_WORKING.md archive/`
-- `mv llama-cpp-flags-en-qwen-strategie.md archive/`
+Performance notes, layer splits, and doc references preserved as comments per section.
 
 ---
 
-## Step 3: Create per-model `.env` files and improve example
+## Step 2: Create `start.sh`
 
-### 3a: `docker-compose.example.yml`
+Bash script (~120 lines). Flow:
 
-Replace `docker-compose.example` (currently identical to docker-compose.yml) with a well-commented template explaining the `.env` file workflow:
-- How to copy a model config: `cp .env.qwen3-coder .env && docker compose up`
-- How to switch models
-- List of available `.env.*` files with descriptions
-- API/Web UI access URLs
-- Full variable reference table in comments
+1. **Parse args**: `./start.sh [model-id]` — skips menu if ID given directly
+2. **Check prerequisites**: docker running? container already up? (offer to stop if so)
+3. **Show menu** (if no arg):
+   ```
+   llama.cpp Model Selector
+   ========================
 
-### 3b: `.env.glm-flash`
+   1) GLM-4.7 Flash Q4_K_M                        128K ctx
+   2) GLM-4.7 Flash Q8_0                           128K ctx
+   3) GLM-4.7 Flash Q8_0 (experimental)            128K ctx
+   4) GPT-OSS 120B F16                              64K ctx
+   5) Qwen3-Coder-Next UD-Q5_K_XL (speed)         256K ctx
+   6) Qwen3-Coder-Next UD-Q6_K_XL (baseline)      256K ctx
+   7) Qwen3-Coder-Next Q6_K                        256K ctx
 
-```
-MODEL=GLM-4.7-Flash/GLM-4.7-Flash-Q8_0.gguf
-CTX_SIZE=131072
-N_GPU_LAYERS=99
-FIT=on
-EXTRA_ARGS=--jinja -np 1
-```
+   q) Quit
 
-Comments: model fits entirely in VRAM, also mention Q4_K_M and experimental variants.
+   Select model [1-7]:
+   ```
+4. **Generate `.env`** from selected section in `models.conf`
+5. **Start**: `exec docker compose up` (foreground, Ctrl+C to stop)
 
-### 3c: `.env.gpt-oss-120b`
-
-```
-MODEL=GPT-OSS-120b/gpt-oss-120b-F16.gguf
-CTX_SIZE=65536
-N_GPU_LAYERS=99
-FIT=off
-EXTRA_ARGS=--jinja -np 1 -b 4096 -ub 4096 -ot blk\.([0-9]|1[01])\.=CUDA0,blk\.(1[2-5])\.=CUDA1,exps=CPU
-```
-
-Comments: ~20 t/s at 64K context, memory breakdown, link to guide.
-
-### 3d: `.env.qwen3-coder` (UD-Q6_K_XL baseline)
-
-```
-MODEL=Qwen3-Coder-Next/UD-Q6_K_XL/Qwen3-Coder-Next-UD-Q6_K_XL-00001-of-00003.gguf
-CTX_SIZE=262144
-N_GPU_LAYERS=99
-FIT=off
-EXTRA_ARGS=--jinja -np 1 -b 2048 -ub 2048 --no-context-shift --temp 1.0 --top-p 0.95 --top-k 40 --min-p 0 -ot blk\.([0-9]|1[0-2])\.=CUDA0,blk\.(1[3-8])\.=CUDA1,exps=CPU
-```
-
-Comments: 21.4 t/s baseline, 256K context, also mention UD-Q5_K_XL speed alternative.
-
-### 3e: `.env.qwen3-coder-q6k` (Q6_K non-UD variant)
-
-```
-MODEL=Qwen3-Coder-Next/Q6_K/Qwen3-Coder-Next-Q6_K-00001-of-00003.gguf
-CTX_SIZE=262144
-N_GPU_LAYERS=99
-FIT=off
-EXTRA_ARGS=--jinja -np 1 -b 2048 -ub 2048 --no-context-shift --temp 1.0 --top-p 0.95 --top-k 40 --min-p 0 -ot blk\.([0-9]|1[0-2])\.=CUDA0,blk\.(1[3-8])\.=CUDA1,exps=CPU
-```
-
-Comments: standard Q6_K quantization (non-UD), note that -ot regex may need adjustment based on testing (similar size to UD-Q6_K_XL, so same layer split is a reasonable starting point).
-
-### 3f: `.env.example`
-
-Create a generic `.env.example` file (best practice) with all variables documented and sensible defaults, so users understand the full variable set. This is the template; the model-specific `.env.*` files are the ready-to-use configs.
-
-### 3g: Delete `docker-compose.example`
-
-Replaced by `docker-compose.example.yml`.
+Key implementation details:
+- INI parser using bash associative array (`declare -A`), no `eval`, no external tools
+- Model file existence check before starting (clear error if missing)
+- `exec` replaces bash process so Ctrl+C goes directly to docker compose
+- CLI shortcut: `./start.sh qwen3-coder` for muscle memory
 
 ---
 
-## Step 4: Update and expand Claude agents
+## Step 3: Archive `.env.*` files
 
-### Update existing agents
+Move to `archive/env-templates/`:
+- `.env.glm-flash`
+- `.env.gpt-oss-120b`
+- `.env.qwen3-coder`
+- `.env.qwen3-coder-q6k`
 
-All three agents reference `llama-cpp-setup-brief.md` (now in archive). Update:
-
-- `.claude/agents/benchmark.md` (line 10-11): Reference `README.md` and `docs/`
-- `.claude/agents/builder.md` (line 10): Reference `README.md` and `docs/`; update "Files you own" to replace `USAGE.md` with `docker-compose.example.yml`
-- `.claude/agents/diagnose.md` (line 10): Reference `README.md` and `docs/`
-
-### Create new agents
-
-- **`.claude/agents/model-manager.md`** — Helps download models (e.g. from Hugging Face), organize them in the correct subdirectory, verify file integrity, list available models and their sizes, suggest quantization trade-offs for the hardware
-- **`.claude/agents/api-integration.md`** — Helps set up and test API integration: configure Claude Code or other tools to use the local llama-server endpoint (`localhost:8080/v1/`), test chat completions, troubleshoot connectivity, set up OpenAI-compatible client configs
+Keep `.env.example` in root — it documents ALL available docker-compose variables (including advanced ones like `SPLIT_MODE`, `TENSOR_SPLIT`, `FIT_TARGET` etc.) which is useful as a reference independent of `models.conf`.
 
 ---
 
-## Step 5: Create `README.md`
+## Step 4: Update documentation
 
-Project README with TOC, covering:
-- **Project overview:** Custom llama.cpp Docker build for specific hardware
-- **Hardware table:** RTX 4090 + RTX 5070 Ti, AMD 5800X3D, 64GB DDR4
-- **Why not Ollama:** `-ot` regex, hardware-specific build, latest features
-- **Target models table:** GLM Flash, GPT-OSS 120B, Qwen3-Coder-Next with speed/use case
-- **Repository structure:** tree diagram showing all key files and folders
-- **Prerequisites:** Docker, NVIDIA Container Toolkit, driver version, CUDA 13.0
-- **Installation/Setup:** Clone this repo, clone llama.cpp, download models, build Docker image
-- **Quick start / Usage:** Copy .env, docker compose up, access Web UI/API
-- **Switching models:** docker compose down, copy different .env, up
-- **Updating llama.cpp:** cd llama.cpp && git pull, rebuild
-- **Documentation links:** Pointers to `docs/` guides and `ROADMAP.md`
+**README.md:**
+- Quick Start: `./start.sh` instead of `cp .env.* .env`
+- Switching Models: show both menu and CLI shortcut
+- Repository Structure: add `models.conf` and `start.sh`, remove `.env.*` model files
+- Available configs table: reference `models.conf` section IDs
 
-Roadmap content goes in separate file (see Step 6).
+**docker-compose.example.yml:**
+- Update header comments to mention `start.sh` as primary workflow
+
+**docs/llama-cpp-flags-and-qwen3-strategy.md line 53:**
+- References `.env.qwen3-coder-q5k` (never existed) — update to reference `models.conf [qwen3-coder-q5]`
 
 ---
 
-## Step 6: Create `ROADMAP.md`
+## Step 5: Git commit
 
-Separate roadmap document with:
-
-- **Current status:** What's working now (3 models configured, Docker build, tested configs)
-- **Next up:**
-  - Formal benchmarks (LiveCodeBench, HumanEval, or similar) across all 3 models
-  - Temperature/sampling parameter sweeps for coding tasks
-  - VRAM optimization experiments (different KV cache types, batch sizes)
-- **Future:**
-  - API integration with Claude Code (use local model as coding assistant)
-  - API integration with other tools (Continue.dev, aider, etc.)
-  - Test `--model-store` for multi-model hot-swap when available in llama.cpp
-  - Explore row split mode for asymmetric GPU workloads
-  - Automated benchmark suite (scripted tests with result logging)
-- **Considered & deferred:**
-  - DGX Spark purchase (see `archive/dgx-spark-benchmarks.md`)
-
----
-
-## Step 7: Git setup
-
-### 7a: Update `.gitignore`
-
-Current file has `models/*.gguf` which does NOT match files in subdirectories. Full replacement:
-
-```gitignore
-# GGUF model files (large binaries)
-**/*.gguf
-
-# Active environment config (user copies from .env.* templates)
-.env
-
-# llama.cpp source (has its own git repo, pulled independently)
-llama.cpp/
-```
-
-Note: `.env.*` template files (`.env.glm-flash`, `.env.gpt-oss-120b`, etc.) are NOT ignored — they are tracked as project configuration. Only the active `.env` is ignored.
-
-### 7b: Initialize repo and commit
-
-```bash
-git init
-git add .
-git commit -m "Initial commit: llama.cpp Docker wrapper for dual-GPU desktop"
-```
-
-**Tracked:** Dockerfile, docker-compose.yml, docker-compose.example.yml, .env.*, .env.example, docs/, archive/, models/.gitkeep, README.md, ROADMAP.md, .claude/, .gitignore, .dockerignore, claude_plans/
-
-**NOT tracked:** llama.cpp/ (gitignored), **/*.gguf (gitignored), .env (gitignored)
-
-**Updating llama.cpp later:** `cd llama.cpp && git pull` — independent of wrapper repo.
-
-**Pushing to GitHub:** `git remote add origin <url> && git push -u origin main`
-
----
-
-## Execution Order
-
-1. Rename `models/GLM 4.7 Flash/` → `models/GLM-4.7-Flash/`
-2. Create `docs/` directory
-3. Create `docs/gpt-oss-120b-configuration-guide.md` (with TOC)
-4. Create `docs/llama-cpp-flags-and-qwen3-strategy.md` (with TOC, full English translation)
-5. Move originals to `archive/`
-6. Create `docker-compose.example.yml`
-7. Create `.env.example`, `.env.glm-flash`, `.env.gpt-oss-120b`, `.env.qwen3-coder`, `.env.qwen3-coder-q6k`
-8. Delete `docker-compose.example`
-9. Update `.claude/agents/benchmark.md`, `builder.md`, `diagnose.md`
-10. Create `.claude/agents/model-manager.md`, `.claude/agents/api-integration.md`
-11. Create `README.md` (with TOC, repo structure, install/usage)
-12. Create `ROADMAP.md`
-13. Update `.gitignore`
-14. `git init` + initial commit
+Stage: `models.conf`, `start.sh`, updated `README.md`, updated docs, archived `.env.*` files.
 
 ---
 
@@ -241,20 +102,24 @@ git commit -m "Initial commit: llama.cpp Docker wrapper for dual-GPU desktop"
 
 | File | Action |
 |------|--------|
-| `gpt-oss-120b-desktop-guide_WORKING.md` | Read → clean up → write to `docs/` → archive |
-| `llama-cpp-flags-en-qwen-strategie.md` | Read → translate → write to `docs/` → archive |
-| `docker-compose.yml` | Read (reference for .env vars) — do not modify |
-| `docker-compose.example` | Delete (replaced by .yml version) |
-| `Dockerfile` | Read-only (verify MODEL path handling) — do not modify |
-| `.gitignore` | Rewrite with correct patterns |
-| `.claude/agents/*.md` | Update references, add 2 new agents |
-
----
+| `models.conf` | Create (new) |
+| `start.sh` | Create (new) |
+| `.env.glm-flash` | Archive |
+| `.env.gpt-oss-120b` | Archive |
+| `.env.qwen3-coder` | Archive |
+| `.env.qwen3-coder-q6k` | Archive |
+| `.env.example` | Keep as-is |
+| `README.md` | Update quick start, switching, structure |
+| `docker-compose.example.yml` | Update header comments |
+| `docs/llama-cpp-flags-and-qwen3-strategy.md` | Fix `.env.qwen3-coder-q5k` reference |
+| `docker-compose.yml` | No changes |
+| `Dockerfile` | No changes |
 
 ## Verification
 
-1. **Docs:** Read both files in `docs/`, confirm all model paths match actual `models/` subdirectories
-2. **Env files:** `cp .env.glm-flash .env && docker compose config` — verify env vars resolve correctly
-3. **Git:** `git status` after commit — verify llama.cpp/ and *.gguf ignored, all project files tracked, .env.* files tracked but .env ignored
-4. **Agents:** Confirm all agent references point to existing files
-5. **Structure:** `ls -R` to verify final directory layout matches README tree diagram
+1. `./start.sh` — verify menu shows all 7 models with correct names and context sizes
+2. Select each model — verify generated `.env` matches the original `.env.*` content
+3. `./start.sh qwen3-coder` — verify CLI shortcut works
+4. `./start.sh nonexistent` — verify error message lists available models
+5. Verify model file existence check works (point MODEL to a fake path)
+6. `docker compose config` after `.env` generation — verify env vars resolve correctly

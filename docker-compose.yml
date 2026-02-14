@@ -49,4 +49,10 @@ services:
       - FIT_CTX=${FIT_CTX:-}
       # ---- Extra flags (pass anything not covered above) ----
       - EXTRA_ARGS=${EXTRA_ARGS:-}
+    healthcheck:
+      test: ["CMD", "curl", "-sf", "http://localhost:8080/health"]
+      interval: 10s
+      timeout: 5s
+      retries: 60
+      start_period: 120s
     restart: unless-stopped

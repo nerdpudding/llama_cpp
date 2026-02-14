@@ -4,10 +4,13 @@
 # HOW TO USE:
 #
 # 1. Run the model selector (recommended):
-#      ./start.sh                    # Interactive menu
+#      ./start.sh                    # Interactive menu + monitoring dashboard
 #      ./start.sh qwen3-coder        # Direct launch by model ID
+#      ./start.sh --no-dashboard     # Launch without dashboard (raw logs)
 #
-#    start.sh reads models.conf, generates .env, and runs docker compose.
+#    start.sh reads models.conf, generates .env, starts the container, and
+#    opens a curses dashboard with server logs, GPU/system monitoring, and
+#    keyboard controls ([q] stop & exit, [r] stop & return to menu).
 #
 # 2. Or manually:
 #      Edit .env (or copy from .env.example) and run: docker compose up
@@ -78,4 +81,10 @@ services:
       - FIT_CTX=${FIT_CTX:-}
       # ---- Extra flags (pass anything not covered above) ----
       - EXTRA_ARGS=${EXTRA_ARGS:-}
+    healthcheck:
+      test: ["CMD", "curl", "-sf", "http://localhost:8080/health"]
+      interval: 10s
+      timeout: 5s
+      retries: 60
+      start_period: 120s
     restart: unless-stopped
