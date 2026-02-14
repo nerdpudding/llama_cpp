@@ -34,7 +34,7 @@ Qwen3-Coder-Next 80B MoE (512 experts, 10 active, ~3B active params/token). 75% 
 
 **Primary: UD-Q6_K_XL + 256K context + q8_0 KV cache**
 
-For a ready-to-use config, see `.env.qwen3-coder` in the project root.
+For a ready-to-use config, see `[qwen3-coder]` in `models.conf`, or run `./start.sh qwen3-coder`.
 
 ```bash
 MODEL=Qwen3-Coder-Next/UD-Q6_K_XL/Qwen3-Coder-Next-UD-Q6_K_XL-00001-of-00003.gguf \
@@ -50,7 +50,7 @@ docker compose up
 
 **21.4 t/s** | 19/48 layers on GPU | 256K context | Best quality of all tested configurations.
 
-**Alternative: UD-Q5_K_XL** — same command but different model, 15+7 layers, **25.8 t/s** (+21% faster). Use when speed is more important than maximum accuracy. See `.env.qwen3-coder-q5k` for a ready-to-use config (adjust model path to `UD-Q5_K_XL`).
+**Alternative: UD-Q5_K_XL** — same command but different model, 15+7 layers, **25.8 t/s** (+21% faster). Use when speed is more important than maximum accuracy. See `[qwen3-coder-q5]` in `models.conf` for a ready-to-use config, or run `./start.sh qwen3-coder-q5`.
 
 ### Key Findings
 
@@ -312,7 +312,7 @@ docker compose up
 63.87 GiB effective (6.89 BPW). Unsloth Dynamic Q6 with XL bit allocation.
 Metadata bug (reported ~Feb 11, 2026) is **fixed** in the Feb 13 reupload.
 
-For a ready-to-use config, see `.env.qwen3-coder` in the project root.
+For a ready-to-use config, see `[qwen3-coder]` in `models.conf`, or run `./start.sh qwen3-coder`.
 
 ```bash
 MODEL=Qwen3-Coder-Next/UD-Q6_K_XL/Qwen3-Coder-Next-UD-Q6_K_XL-00001-of-00003.gguf \
@@ -432,7 +432,7 @@ All large quants are split into **3 files**. Always point MODEL to the first fil
 
 ## Part 1: GPT-OSS Docker Setup — Flags Explained {#part-1-gpt-oss-docker-setup--flags-explained}
 
-Working config (see also `.env.gpt-oss-120b`):
+Working config (see also `[gpt-oss-120b]` in `models.conf`):
 ```bash
 MODEL=GPT-OSS-120b/gpt-oss-120b-F16.gguf \
 CTX_SIZE=65536 \

@@ -60,11 +60,9 @@ Ollama doesn't support the features needed for this hardware and these models:
 ├── docker-compose.example.yml     # Annotated template with usage instructions
 ├── .dockerignore
 ├── .gitignore
+├── models.conf                    # Central model configuration (all models)
+├── start.sh                       # Model selector script (generates .env)
 ├── .env.example                   # Generic template with all variables documented
-├── .env.glm-flash                 # GLM-4.7 Flash Q8_0 config
-├── .env.gpt-oss-120b             # GPT-OSS 120B config
-├── .env.qwen3-coder              # Qwen3-Coder-Next UD-Q6_K_XL config (baseline)
-├── .env.qwen3-coder-q6k          # Qwen3-Coder-Next Q6_K config
 ├── docs/
 │   ├── gpt-oss-120b-configuration-guide.md
 │   └── llama-cpp-flags-and-qwen3-strategy.md
@@ -76,7 +74,8 @@ Ollama doesn't support the features needed for this hardware and these models:
 │       ├── Q6_K/
 │       ├── UD-Q5_K_XL/
 │       └── UD-Q6_K_XL/
-├── archive/                       # Historical docs and superseded configs
+├── archive/
+│   └── env-templates/             # Archived per-model .env files (replaced by models.conf)
 ├── claude_plans/                  # Claude Code plan files
 ├── llama.cpp/                     # llama.cpp source (separate git repo, gitignored)
 └── .claude/
@@ -122,21 +121,17 @@ Ollama doesn't support the features needed for this hardware and these models:
 
 ## Quick Start
 
-1. Copy a model configuration:
+1. Run the model selector:
    ```bash
-   cp .env.qwen3-coder .env
+   ./start.sh
    ```
+   Pick a model from the menu — the script generates `.env` and starts docker compose.
 
-2. Start the server:
-   ```bash
-   docker compose up
-   ```
-
-3. Access:
+2. Access:
    - **Web UI:** http://localhost:8080
    - **API:** http://localhost:8080/v1/chat/completions
 
-4. Test with curl:
+3. Test with curl:
    ```bash
    curl http://localhost:8080/v1/chat/completions \
      -H "Content-Type: application/json" \
@@ -145,20 +140,25 @@ Ollama doesn't support the features needed for this hardware and these models:
 
 ## Switching Models
 
+Use the interactive menu or pass a model ID directly:
+
 ```bash
-docker compose down
-cp .env.gpt-oss-120b .env    # or any other .env.* file
-docker compose up
+./start.sh                  # Interactive menu
+./start.sh qwen3-coder      # Direct launch (stops running container first)
+./start.sh --list            # List available models
 ```
 
-Available configs:
+Available models (defined in `models.conf`):
 
-| Config File | Model | Speed | Context |
-|-------------|-------|-------|---------|
-| `.env.qwen3-coder` | Qwen3-Coder-Next UD-Q6_K_XL | 21.4 t/s | 256K |
-| `.env.qwen3-coder-q6k` | Qwen3-Coder-Next Q6_K | ~21 t/s | 256K |
-| `.env.glm-flash` | GLM-4.7 Flash Q8_0 | Fast | 128K |
-| `.env.gpt-oss-120b` | GPT-OSS 120B | ~20 t/s | 64K |
+| Section ID | Model | Speed | Context |
+|------------|-------|-------|---------|
+| `glm-flash-q4` | GLM-4.7 Flash Q4_K_M | Fast | 128K |
+| `glm-flash` | GLM-4.7 Flash Q8_0 | Fast | 128K |
+| `glm-flash-exp` | GLM-4.7 Flash Q8_0 (experimental) | Fast | 128K |
+| `gpt-oss-120b` | GPT-OSS 120B F16 | ~20 t/s | 64K |
+| `qwen3-coder-q5` | Qwen3-Coder-Next UD-Q5_K_XL (speed) | 25.8 t/s | 256K |
+| `qwen3-coder` | Qwen3-Coder-Next UD-Q6_K_XL (baseline) | 21.4 t/s | 256K |
+| `qwen3-coder-q6k` | Qwen3-Coder-Next Q6_K | ~21 t/s | 256K |
 
 ## Updating llama.cpp
 

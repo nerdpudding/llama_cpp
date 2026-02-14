@@ -3,31 +3,21 @@
 #
 # HOW TO USE:
 #
-# 1. Pick a model config:
-#      cp .env.qwen3-coder .env          # Qwen3-Coder-Next UD-Q6_K_XL (baseline)
-#      cp .env.qwen3-coder-q6k .env      # Qwen3-Coder-Next Q6_K (non-UD)
-#      cp .env.glm-flash .env            # GLM-4.7 Flash Q8_0 (fits in VRAM)
-#      cp .env.gpt-oss-120b .env         # GPT-OSS 120B (MoE, partial CPU offload)
+# 1. Run the model selector (recommended):
+#      ./start.sh                    # Interactive menu
+#      ./start.sh qwen3-coder        # Direct launch by model ID
 #
-# 2. Start the server:
-#      docker compose up
+#    start.sh reads models.conf, generates .env, and runs docker compose.
+#
+# 2. Or manually:
+#      Edit .env (or copy from .env.example) and run: docker compose up
 #
 # 3. Access:
 #      Web UI:  http://localhost:8080
 #      API:     http://localhost:8080/v1/chat/completions
 #
-# SWITCHING MODELS:
-#      docker compose down
-#      cp .env.<model> .env
-#      docker compose up
-#
-# AVAILABLE .env FILES:
-#
-#   .env.qwen3-coder     - Qwen3-Coder-Next UD-Q6_K_XL, 256K ctx, 21.4 t/s
-#   .env.qwen3-coder-q6k - Qwen3-Coder-Next Q6_K, 256K ctx
-#   .env.glm-flash       - GLM-4.7 Flash Q8_0, 128K ctx, fits entirely in VRAM
-#   .env.gpt-oss-120b    - GPT-OSS 120B F16 (MXFP4), 64K ctx, ~20 t/s
-#   .env.example          - Generic template with all variables documented
+# MODELS:
+#   All models are defined in models.conf. Run ./start.sh --list to see them.
 #
 # VARIABLE REFERENCE:
 #
