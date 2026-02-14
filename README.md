@@ -12,6 +12,7 @@ Custom llama.cpp Docker build optimized for a dual-GPU desktop with asymmetric V
 - [Installation](#installation)
 - [Quick Start](#quick-start)
 - [Switching Models](#switching-models)
+- [Benchmarks](#benchmarks)
 - [Updating llama.cpp](#updating-llamacpp)
 - [Documentation](#documentation)
 
@@ -173,6 +174,19 @@ Available models (defined in `models.conf`):
 | `qwen3-coder-q5` | Qwen3-Coder-Next UD-Q5_K_XL (speed) | 25.8 t/s | 256K |
 | `qwen3-coder` | Qwen3-Coder-Next UD-Q6_K_XL (baseline) | 21.4 t/s | 256K |
 | `qwen3-coder-q6k` | Qwen3-Coder-Next Q6_K | ~21 t/s | 256K |
+
+## Benchmarks
+
+The project includes an [EvalPlus HumanEval+](benchmarks/evalplus/README.md) coding benchmark runner that tests all models against 164 Python problems and compares results with proprietary models (Claude, GPT, DeepSeek, etc.).
+
+```bash
+cd benchmarks/evalplus
+source .venv/bin/activate       # One-time setup: uv venv && uv pip install evalplus
+./run-benchmark.sh bench-glm-flash-q4   # Smoke test (one model, ~30-60 min)
+./run-benchmark.sh                       # Full run (all 6 models, ~6 hours)
+```
+
+Code generation runs on the host via the llama.cpp API; evaluation runs in a Docker sandbox for safety. See [benchmarks/evalplus/README.md](benchmarks/evalplus/README.md) for full setup and usage.
 
 ## Updating llama.cpp
 
