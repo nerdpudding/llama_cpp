@@ -69,12 +69,19 @@ Ollama doesn't support the features needed for this hardware and these models:
 │   └── llama-cpp-flags-and-qwen3-strategy.md
 ├── models/                        # GGUF files (gitignored)
 │   ├── .gitkeep
+│   ├── documentation/             # Model cards (README from HuggingFace)
 │   ├── GLM-4.7-Flash/
 │   ├── GPT-OSS-120b/
 │   └── Qwen3-Coder-Next/
 │       ├── Q6_K/
 │       ├── UD-Q5_K_XL/
 │       └── UD-Q6_K_XL/
+├── benchmarks/
+│   └── evalplus/                  # EvalPlus HumanEval+ coding benchmark runner
+│       ├── run-benchmark.sh       # Orchestrator script
+│       ├── generate-report.py     # Results → comparison table
+│       ├── reference-scores.json  # Published proprietary model scores
+│       └── results/               # Benchmark outputs (gitignored)
 ├── archive/
 │   └── env-templates/             # Archived per-model .env files (replaced by models.conf)
 ├── claude_plans/                  # Claude Code plan files
@@ -182,5 +189,6 @@ The `llama.cpp/` directory is a separate git repository — it's gitignored from
 
 - **[GPT-OSS 120B Configuration Guide](docs/gpt-oss-120b-configuration-guide.md)** — Detailed setup, memory breakdown, performance data, and failed attempts for GPT-OSS 120B
 - **[llama.cpp Flags & Qwen3 Strategy](docs/llama-cpp-flags-and-qwen3-strategy.md)** — Deep-dive into flags, quantization comparison, `-ot` regex lookup tables, and all tested strategies for Qwen3-Coder-Next
+- **[EvalPlus Benchmark Runner](benchmarks/evalplus/README.md)** — HumanEval+ coding benchmark setup, usage, and comparison with proprietary models
 - **[ROADMAP.md](ROADMAP.md)** — Current status and future plans
 - **[docker-compose.example.yml](docker-compose.example.yml)** — Annotated compose template with full variable reference

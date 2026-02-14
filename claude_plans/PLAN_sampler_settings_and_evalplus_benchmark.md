@@ -115,29 +115,37 @@ Add `benchmarks/evalplus/.venv/` to `.gitignore`.
 ./benchmarks/evalplus/run-benchmark.sh --report                # Generate comparison report
 ```
 
-### Core logic (sequential per model)
+### Core logic (sequential per model, two-phase)
+
+EvalPlus runs in two phases for safety: generation on the host, evaluation in Docker sandbox.
+
 ```
 for each bench-* model_id:
   1. Check model file exists
   2. Generate .env from models.conf (same logic as start.sh)
   3. docker compose up -d
   4. Wait for health (600s timeout, non-interactive)
-  5. Activate .venv, run:
-     evalplus.evaluate --model "$name" --dataset humaneval \
+  5. PHASE 1 — Code generation (host, via uv .venv):
+     evalplus.codegen --model "$name" --dataset humaneval \
          --base-url http://localhost:8080/v1 --backend openai \
          --greedy --root benchmarks/evalplus/results/$model_id
   6. docker compose down
-  7. Log result summary
+  7. PHASE 2 — Code evaluation (Docker sandbox):
+     docker run --rm -v $(pwd)/benchmarks/evalplus/results/$model_id:/app \
+         ganler/evalplus:latest \
+         evalplus.evaluate --dataset humaneval --samples /app/humaneval/*.jsonl
+  8. Log result summary
 ```
 
 ### Key design decisions
+- **Docker sandbox for code execution** — generated code runs inside `ganler/evalplus:latest`, not on the host. Safer since it executes arbitrary AI-generated Python.
 - **Benchmark profiles only** — script filters for `bench-*` sections from models.conf
 - **16K context** — verified safe: EvalPlus max total ≈ 1,300 tokens per request
 - **Same -ot layer splits** — layer placement unaffected by context reduction, KV cache is separate
 - **`continue` on failure** — if a model fails to start, skip it and proceed to the next
 - **600s health timeout** — large models (GPT-OSS 120B) need time to load ~61GB from disk
 - **Log everything** — each run saves to `results/$model_id/evalplus.log`
-- **uv venv activation** — script activates `.venv` before calling evalplus
+- **uv venv activation** — script activates `.venv` before calling evalplus (generation phase only)
 
 ### Expected runtime
 ~1 hour per model for HumanEval+ (164 problems). 6 models = ~6 hours total. Best run overnight.

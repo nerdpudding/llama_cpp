@@ -14,12 +14,17 @@ MoE models use optimized `-ot` regex configurations for per-layer GPU/CPU tensor
 
 **Monitoring dashboard:** `start.sh` now launches the container in the background, waits for server health, and opens a Python curses TUI (`dashboard.py`) with four panels: server logs (scrollable), per-GPU VRAM/utilization/power/temp monitoring, system stats (CPU/RAM/swap/container), and keyboard controls (`q` stop & exit, `r` stop & return to menu). Docker healthcheck is also configured for container-level health awareness. Use `--no-dashboard` for raw log output.
 
-## Next Up
+## Done
 
-### Formal benchmarks
-- Run LiveCodeBench, HumanEval, or similar coding-specific benchmarks across all configured models
-- Compare against proprietary models (Opus 4.6, GPT-5.3 Codex) to understand which tasks are suitable for local inference
-- Document results as a score reference for future model upgrades
+### Formal benchmarks (EvalPlus HumanEval+)
+- EvalPlus benchmark runner in `benchmarks/evalplus/` — runs HumanEval+ (164 Python problems) against all models via the llama.cpp OpenAI API
+- 6 benchmark profiles in `models.conf` (bench-*) with reduced 16K context
+- Code generation on host, evaluation in Docker sandbox (`ganler/evalplus`) for safety
+- Comparison report with published scores for proprietary models (Claude, GPT, DeepSeek, Codestral, etc.)
+- Production sampler settings updated per official model card recommendations
+- See `benchmarks/evalplus/README.md` for setup and usage
+
+## Next Up
 
 ### Temperature/sampling parameter sweeps
 - Test temperature 0.6 / 0.8 / 1.0 for agentic coding tasks
@@ -48,9 +53,10 @@ MoE models use optimized `-ot` regex configurations for per-layer GPU/CPU tensor
 - Test with future llama.cpp DeltaNet kernel optimizations
 - Benchmark impact of `-t` thread count on CPU expert processing
 
-### Automated benchmark suite
-- Scripted tests with result logging
-- Automated VRAM utilization tracking
+### Extended benchmarks
+- Add MBPP+ (378 problems) to the existing EvalPlus benchmark runner
+- LiveCodeBench support (pending upstream OpenAI API integration)
+- Automated VRAM utilization tracking during benchmarks
 - Regression testing when updating llama.cpp
 
 ## Considered & Deferred

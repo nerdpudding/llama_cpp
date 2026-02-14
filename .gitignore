@@ -9,3 +9,8 @@ llama.cpp/
 
 # Python bytecode
 __pycache__/
+
+# Benchmark outputs and Python environment
+benchmarks/evalplus/results/
+!benchmarks/evalplus/results/.gitkeep
+benchmarks/evalplus/.venv/

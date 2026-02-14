@@ -1,0 +1,79 @@
+{
+  "metadata": {
+    "source": "Model cards, EvalPlus leaderboard, benchmark articles",
+    "last_updated": "2026-02-14",
+    "notes": "pass@1, greedy decoding. 'humaneval' = standard (164 problems, basic tests). 'humaneval_plus' = EvalPlus (164 problems, 80x more tests, stricter). HumanEval+ scores are typically 3-8% lower than standard HumanEval."
+  },
+  "models": {
+    "Claude Opus 4.5": {
+      "humaneval": 94.2,
+      "humaneval_plus": null,
+      "source": "zoer.ai Jan 2026 benchmark"
+    },
+    "GPT-5.2 Codex": {
+      "humaneval": 91.7,
+      "humaneval_plus": null,
+      "source": "zoer.ai Jan 2026 benchmark"
+    },
+    "Claude 3.5 Sonnet": {
+      "humaneval": 92.0,
+      "humaneval_plus": 81.7,
+      "source": "EvalPlus leaderboard + index.dev"
+    },
+    "GPT-4o": {
+      "humaneval": 90.2,
+      "humaneval_plus": 87.2,
+      "source": "EvalPlus leaderboard + index.dev"
+    },
+    "OpenAI O1 Preview": {
+      "humaneval": 96.3,
+      "humaneval_plus": 89.0,
+      "source": "EvalPlus leaderboard"
+    },
+    "DeepSeek-V3 / GPT-4-Turbo": {
+      "humaneval": null,
+      "humaneval_plus": 86.6,
+      "source": "EvalPlus leaderboard"
+    },
+    "Qwen2.5-Coder-32B-Instruct": {
+      "humaneval": null,
+      "humaneval_plus": 87.2,
+      "source": "EvalPlus leaderboard"
+    },
+    "Codestral 25.01": {
+      "humaneval": 86.6,
+      "humaneval_plus": null,
+      "source": "Mistral AI / index.dev"
+    },
+    "GLM-4.7 (full, not Flash)": {
+      "humaneval": 87.0,
+      "humaneval_plus": null,
+      "source": "zoer.ai"
+    },
+    "Gemini 1.5 Pro": {
+      "humaneval": 84.1,
+      "humaneval_plus": null,
+      "source": "index.dev"
+    },
+    "Llama 3.1 405B": {
+      "humaneval": 82.0,
+      "humaneval_plus": null,
+      "source": "index.dev"
+    },
+    "Qwen3-Coder-Next (FP16, official)": {
+      "humaneval": 94.1,
+      "humaneval_plus": null,
+      "source": "Model card"
+    },
+    "GPT-OSS 120B (official)": {
+      "humaneval": 88.3,
+      "humaneval_plus": null,
+      "source": "Model card"
+    },
+    "GLM-4.7 Flash (official)": {
+      "humaneval": null,
+      "humaneval_plus": null,
+      "source": "No published HumanEval score"
+    }
+  }
+}
