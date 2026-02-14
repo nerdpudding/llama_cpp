@@ -74,13 +74,24 @@ get_bench_ids() {
 }
 
 list_bench_models() {
-    echo "Available benchmark profiles:"
+    echo "Available benchmark profiles (edit models.conf to change settings):"
     echo ""
     for id in "${SECTION_IDS[@]}"; do
         [[ "$id" != bench-* ]] && continue
         local name; name=$(get "$id" NAME)
+        local model; model=$(get "$id" MODEL)
         local ctx; ctx=$(get "$id" CTX_SIZE)
-        printf "  %-25s  %s  (%s ctx)\n" "$id" "$name" "$ctx"
+        local ngl; ngl=$(get "$id" N_GPU_LAYERS)
+        local fit; fit=$(get "$id" FIT)
+        local extra; extra=$(get "$id" EXTRA_ARGS)
+        echo "  [$id]"
+        echo "    Name:       $name"
+        echo "    Model:      $model"
+        echo "    Context:    $ctx"
+        echo "    GPU layers: $ngl"
+        [[ -n "$fit" ]] && echo "    Fit:        $fit"
+        [[ -n "$extra" ]] && echo "    Extra args: $extra"
+        echo ""
     done
 }
 
