@@ -189,5 +189,6 @@ results/
 
 - EvalPlus uses `--greedy` (temperature=0), which overrides server-side sampler settings via the API. The sampler defaults in `models.conf` are for production use, not benchmarks.
 - The script reuses the same `docker-compose.yml` and `.env` mechanism as `start.sh`, so hardware-specific GPU splits are identical to production.
+- **Thinking models (GLM):** GLM is a thinking model that normally puts chain-of-thought in a separate `reasoning_content` API field. EvalPlus only reads the `content` field, so without intervention all solutions would be empty. The bench profiles use `--reasoning-format none` to force everything into `content` (thinking + answer together). The postprocessor then strips the `<think>` tags, leaving only the code. Production profiles don't need this flag because the web UI renders `reasoning_content` natively.
 - Post-processing is applied uniformly to all models before evaluation. Models with clean output (e.g., Qwen3) pass through unchanged. Models with reasoning tags or markdown fences (e.g., GLM, GPT-OSS) get cleaned automatically.
 - EvalPlus also supports MBPP+ (378 problems). To add it, change `--dataset humaneval` to `--dataset mbpp` in `codegen.sh`.
