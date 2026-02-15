@@ -186,7 +186,7 @@ source .venv/bin/activate       # One-time setup: uv venv && uv pip install eval
 ./run-benchmark.sh                       # Full run (all 6 models, ~6 hours)
 ```
 
-Code generation runs on the host via the llama.cpp API; evaluation runs in a Docker sandbox for safety. See [benchmarks/evalplus/README.md](benchmarks/evalplus/README.md) for full setup and usage.
+Code generation runs on the host via the llama.cpp API; evaluation runs in a Docker sandbox for safety. Claude Opus 4.6 can also be benchmarked using a custom Claude Code agent that solves each problem without code execution or internet access. See [benchmarks/evalplus/README.md](benchmarks/evalplus/README.md) for full setup and usage.
 
 ## Updating llama.cpp
 

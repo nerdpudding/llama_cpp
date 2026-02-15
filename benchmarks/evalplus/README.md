@@ -88,8 +88,8 @@ Benchmark profiles are defined in `models.conf` with a `bench-` prefix. They use
 | `bench-glm-flash-q4` | GLM-4.7 Flash Q4_K_M | Smallest, fastest — good for smoke testing |
 | `bench-glm-flash` | GLM-4.7 Flash Q8_0 | Higher quality quant |
 | `bench-gpt-oss-120b` | GPT-OSS 120B F16 | Large MoE, partial CPU offload |
-| `bench-qwen3-coder-q5` | Qwen3-Coder-Next UD-Q5_K_XL | Speed option |
-| `bench-qwen3-coder` | Qwen3-Coder-Next UD-Q6_K_XL | Coding baseline |
+| `bench-qwen3-coder-ud-q5` | Qwen3-Coder-Next UD-Q5_K_XL | Speed option |
+| `bench-qwen3-coder-ud-q6` | Qwen3-Coder-Next UD-Q6_K_XL | Coding baseline |
 | `bench-qwen3-coder-q6k` | Qwen3-Coder-Next Q6_K | Standard quant |
 
 ## Output
@@ -126,6 +126,48 @@ The comparison report (`REPORT.md`) includes local scores alongside published sc
 - EvalPlus uses `--greedy` (temperature=0), which overrides server-side sampler settings via the API. The sampler defaults in `models.conf` are for production use, not benchmarks.
 - The evalplus Docker sandbox (`ganler/evalplus`) has no network access — it only gets a volume mount with the generated code files.
 - The script reuses the same `docker-compose.yml` and `.env` mechanism as `start.sh`, so hardware-specific GPU splits are identical to production.
+
+## Claude Opus 4.6 benchmark
+
+Claude Opus 4.6 can be benchmarked on the same HumanEval+ problems using a custom Claude Code agent. The agent reads each problem and writes a solution from knowledge alone — no code execution, no internet, no tools other than Read/Write.
+
+### Prerequisites
+
+- Claude Code with a Max subscription
+- Prompts extracted: `.venv/bin/python extract-prompts.py` (creates `humaneval_prompts.json`)
+
+### Running
+
+Start a **clean** Claude Code session with the agent:
+
+```bash
+cd /home/rvanpolen/vibe_claude_kilo_cli_exp/llama_cpp
+claude --agent humaneval-solver-thinking    # with extended thinking
+# or
+claude --agent humaneval-solver             # without extended thinking
+```
+
+Type `start` and wait for the agent to solve all 164 problems. Solutions are written to `results/bench-opus4.6-thinking/` or `results/bench-opus4.6/`.
+
+### Evaluation
+
+After the agent finishes, evaluate the solutions and regenerate the report:
+
+```bash
+cd benchmarks/evalplus
+./evaluate-claude.sh bench-opus4.6-thinking
+# or for both:
+./evaluate-claude.sh
+```
+
+This runs the same Docker sandbox evaluation as the local models and updates REPORT.md.
+
+### Notes
+
+- The agent has only Read and Write tools — no Bash, no WebSearch, no code execution
+- HumanEval is likely in Claude's training data (same applies to all frontier models with published scores)
+- "vs FP16 ref" in the report compares against the published Opus 4.5 score (no Opus 4.6 reference available)
+- If context runs out mid-session, the agent writes partial results with instructions on where to continue
 
 ## Adding MBPP+ later
 

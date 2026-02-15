@@ -25,6 +25,8 @@ DISPLAY_NAMES = {
     "bench-qwen3-coder-ud-q5": "Qwen3-Coder-Next UD-Q5_K_XL",
     "bench-qwen3-coder-ud-q6": "Qwen3-Coder-Next UD-Q6_K_XL",
     "bench-qwen3-coder-q6k": "Qwen3-Coder-Next Q6_K",
+    "bench-opus4.6-thinking": "Claude Opus 4.6 (thinking)",
+    "bench-opus4.6": "Claude Opus 4.6",
 }
 
 # Map section IDs to reference model keys for delta calculation
@@ -35,6 +37,8 @@ REFERENCE_MAP = {
     "bench-gpt-oss-120b": "GPT-OSS 120B (official)",
     "bench-glm-flash-q4": "GLM-4.7 (full, not Flash)",
     "bench-glm-flash": "GLM-4.7 (full, not Flash)",
+    "bench-opus4.6-thinking": "Claude Opus 4.5",
+    "bench-opus4.6": "Claude Opus 4.5",
 }
 
 
@@ -239,6 +243,11 @@ def generate_report(results_dir: str, reference_file: str) -> str:
     lines.append("- Many reference models only have HumanEval (not HumanEval+) published — direct comparison on HumanEval+ is limited")
     lines.append("- Local scores may differ from published due to quantization, prompt template, and max_tokens differences")
     lines.append("- GLM-4.7 Flash is a reasoning model — benchmarked with `--reasoning-format none` to include thinking in output. Scores may be less reliable: the model spends tokens on chain-of-thought reasoning before producing code, and the code extractor must parse it from mixed reasoning+code output. The Q4 > Q8 score inversion is likely caused by this")
+
+    # Add Claude note if any opus results exist
+    has_opus = any("opus" in mid for mid in local_scores)
+    if has_opus:
+        lines.append("- Claude Opus 4.6 was tested via Claude Code (Max subscription) using a custom agent that solves each problem from the prompt alone — no code execution, no internet, no tools. \"vs FP16 ref\" compares against the published Opus 4.5 score (no Opus 4.6 reference available yet)")
     lines.append("")
 
     return "\n".join(lines)

@@ -1,13 +1,20 @@
-# Run 1 — max_new_tokens=768 (evalplus default)
+# Run 1 — DISCARDED (incorrect max_new_tokens)
 
 Date: 2026-02-14
 
+These results are from an initial benchmark run that used the evalplus default of
+max_new_tokens=768. This proved far too low for chat/instruct models: GLM Flash
+failed entirely and GPT-OSS lost ~25pp due to truncated output. All scores below
+are **unreliable** and kept only for reference.
+
+The corrected results (max_new_tokens=4096) are in **REPORT.md**.
+
 ## Settings
-- evalplus default: max_new_tokens=768
+- evalplus default: max_new_tokens=768 (too low — caused truncation and empty solutions)
 - GLM Flash: no --reasoning-format flag (first attempt), then --reasoning-format none (second attempt)
 - All other settings: bench-* profiles from models.conf, greedy decoding (temperature=0)
 
-## Results
+## Results (unreliable — do not use)
 
 | Model | HumanEval (base) | HumanEval+ | Notes |
 |-------|-----------------|------------|-------|
@@ -24,7 +31,7 @@ Date: 2026-02-14
 3. **Qwen3 scores may be slightly depressed** — no empty solutions but some answers near the 768 token limit.
 4. **All three Qwen3 quants scored identically on HumanEval+** (88.4%) — quantization has no measurable impact on this benchmark.
 
-## Action taken
+## Action taken (led to run 2 → REPORT.md)
 - Increased max_new_tokens to 4096 in evalplus source (provider/base.py)
 - Added --reasoning-format none to GLM bench-* profiles in models.conf
-- Re-running all 6 models as run 2
+- Re-ran all 6 models — final results are in REPORT.md
