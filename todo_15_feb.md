@@ -16,9 +16,9 @@
 - [x] Pipeline werkt (codegen → postprocess → evaluate → report)
 - [x] Full benchmark run draait nu met --all
 
-### 3. Na succesvolle test
-- [ ] Archiveer `PLAN_fair_postprocessing_benchmark.md` → `archive/`
-- [ ] Archiveer `PLAN_separation_of_concerns.md` → `archive/`
+### 3. Na succesvolle test — DONE
+- [x] Archiveer `PLAN_fair_postprocessing_benchmark.md` → `archive/`
+- [x] Archiveer `PLAN_separation_of_concerns.md` → `archive/`
 
 ### 4. GPU layer optimalisatie bench profielen — DONE
 - [x] Alle bench profiles geoptimaliseerd en getest (zie testlijst)
@@ -28,10 +28,7 @@
 - [x] Q6K (non-UD) verwijderd, UD varianten volstaan
 - [x] Full benchmark run gestart (~all, loopt nu)
 
-### 5. Productie profiles reviewen — TODO
-- [ ] Benchmark resultaten analyseren, modellen kiezen
-- [ ] Productie profiles optimaliseren met gpu-optimizer agent
-- [ ] Testen en documenteren
+### 5. Productie profiles reviewen — overgeheveld naar todo_16_feb.md
 
 ## Profile test status
 

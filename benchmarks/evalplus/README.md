@@ -146,7 +146,7 @@ SYSTEM_PROMPT=Reasoning: high
 
 ## Benchmark profiles
 
-Profiles are defined in `models.conf` with a `bench-` prefix. They use the same model files and GPU layer splits as production, but with reduced context (16K) to save VRAM.
+Profiles are defined in `models.conf` with a `bench-` prefix. They use the same model files as production, but with reduced context (10K) and optimized GPU layer splits to save VRAM.
 
 | Profile | Model | Notes |
 |---------|-------|-------|
