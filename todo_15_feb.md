@@ -30,9 +30,9 @@
 
 ### 4. GPU layer optimalisatie bench profielen — NOT STARTED
 Zie `claude_plans/PLAN_bench_gpu_optimization.md`
-- [ ] Handmatige test: GPT-OSS + Reasoning: high, meet response lengtes
+- [x] Handmatige test: GPT-OSS + Reasoning: high, meet response lengtes (max ~3,300 tokens)
 - [ ] Bench profiles toevoegen aan start.sh model picker
-- [ ] CTX_SIZE verlagen naar 8192 voor alle bench profiles
+- [ ] CTX_SIZE verlagen naar 10240 voor alle bench profiles
 - [ ] GLM Q4/Q8 testen of ze op 4090-only passen
 - [ ] Layer splits optimaliseren voor GPT-OSS en Qwen3
 - [ ] OOM test per model via start.sh

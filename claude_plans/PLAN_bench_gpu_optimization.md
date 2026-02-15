@@ -19,7 +19,11 @@ Less KV cache = more VRAM = potentially more layers on GPU = faster benchmark ru
 
 **Unknown:** GPT-OSS with `Reasoning: high` — could be significantly longer.
 
-**Target CTX_SIZE:** 8192 (was 16384)
+**Target CTX_SIZE:** 10240 (was 16384)
+
+**Why not 8K:** GLM Q8's worst case (HumanEval/10) uses ~8,391 tokens total
+(prompt + thinking + response), which exceeds 8192. 10K gives safe margin
+for all models including future additions.
 
 ## Pre-implementation: manual GPT-OSS test
 
@@ -31,12 +35,14 @@ Before changing anything, test GPT-OSS with `Reasoning: high` to confirm 8K is s
    - Temperature: `0` (greedy, same as evalplus `--greedy`)
    - Top-P: `1` (effectively disabled)
    - Min-P: `0`
-   - Max tokens (response): `4096` (same as bench-client.conf MAX_TOKENS)
+   - Max tokens (response): not available in GUI, leave default (will be unlimited — better for testing worst case)
 3. Test these two prompts (worst-case from existing data). Copy-paste each
    into the web UI chat box:
 
    **Test 1 — HumanEval/10** (GLM's longest response):
    ```
+   Complete this Python function:
+
    def is_palindrome(string: str) -> bool:
        """ Test if given string is a palindrome """
        return string == string[::-1]
@@ -58,6 +64,8 @@ Before changing anything, test GPT-OSS with `Reasoning: high` to confirm 8K is s
 
    **Test 2 — HumanEval/129** (GPT-OSS's own longest response):
    ```
+   Complete this Python function:
+
    def minPath(grid, k):
        """
        Given a grid with N rows and N columns (N >= 2) and a positive integer k,
@@ -102,11 +110,11 @@ can be selected for manual testing (OOM checks, response length checks).
 
 ### 2. Reduce CTX_SIZE for all bench profiles
 
-Change all bench profiles from `CTX_SIZE=16384` to `CTX_SIZE=8192`.
+Change all bench profiles from `CTX_SIZE=16384` to `CTX_SIZE=10240`.
 
 ### 3. Calculate VRAM freed per model
 
-**KV cache savings (16K → 8K):**
+**KV cache savings (16K → 10K):**
 
 - **GLM Flash:** Standard attention on all layers. KV cache scales linearly.
   At q8_0: 16K uses ~X MiB, 8K uses ~X/2 MiB. Need to measure.
@@ -120,16 +128,16 @@ Change all bench profiles from `CTX_SIZE=16384` to `CTX_SIZE=8192`.
 
 ### 4. Try fitting models entirely on RTX 4090
 
-With 8K context, some models might fit entirely on the 4090 (24 GB):
+With 10K context, some models might fit entirely on the 4090 (24 GB):
 
 - **GLM Flash Q4 (~8 GB weights):** Almost certainly fits on 4090 alone.
   Already uses FIT=on. Might not even need 5070 Ti at all.
-- **GLM Flash Q8 (~16 GB weights):** Tight but possible with 8K context.
+- **GLM Flash Q8 (~16 GB weights):** Possible with 10K context.
   24 GB - 16 GB weights = 8 GB for KV cache + compute buffers.
 - **GPT-OSS 120B (~61 GB weights):** No chance on single GPU. But freed VRAM
   could allow more layers on GPU → faster.
 - **Qwen3 UD-Q5 (~57 GB) / UD-Q6 (~64 GB) / Q6K (~66 GB):** No chance on
-  single GPU. But with tiny KV at 8K, significantly more layers on GPU.
+  single GPU. But with tiny KV at 10K, significantly more layers on GPU.
 
 ### 5. Optimize layer splits for MoE models
 
