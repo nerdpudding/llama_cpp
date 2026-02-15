@@ -4,6 +4,57 @@ Runs [HumanEval+](https://github.com/evalplus/evalplus) (164 Python coding probl
 
 Results are comparable to the [EvalPlus leaderboard](https://evalplus.github.io/leaderboard.html) — same benchmark, same greedy decoding, same pass@1 metric.
 
+## Table of contents
+
+- [Quick reference](#quick-reference)
+- [How it works](#how-it-works)
+- [Prerequisites](#prerequisites)
+- [One-time setup](#one-time-setup)
+- [Usage](#usage)
+- [Benchmark profiles](#benchmark-profiles)
+- [Output](#output)
+- [Claude Opus 4.6 benchmark](#claude-opus-46-benchmark)
+- [Troubleshooting](#troubleshooting)
+- [Technical notes](#technical-notes)
+
+## Quick reference
+
+### Local models (llama.cpp)
+
+```bash
+cd benchmarks/evalplus
+./run-benchmark.sh --list                    # Show available benchmark profiles
+./run-benchmark.sh bench-glm-flash-q4        # Run one model (smoke test)
+./run-benchmark.sh bench-qwen3-coder-ud-q6 bench-gpt-oss-120b   # Run specific models
+./run-benchmark.sh                           # Run all bench-* profiles
+./run-benchmark.sh --report                  # Regenerate report from existing results
+```
+
+### Claude Opus 4.6
+
+Three steps: extract prompts → run agent → evaluate results.
+
+```bash
+# Step 1: Extract the 164 HumanEval prompts to a JSON file (one-time, already done)
+cd benchmarks/evalplus
+.venv/bin/python extract-prompts.py          # Creates humaneval_prompts.json
+
+# Step 2: Start a NEW Claude Code session with the benchmark agent
+#         (must be a clean session — not inside an existing conversation)
+cd /home/rvanpolen/vibe_claude_kilo_cli_exp/llama_cpp
+claude --agent humaneval-solver-thinking     # With extended thinking
+# or:
+claude --agent humaneval-solver              # Without extended thinking
+# Then type "start" — the agent reads the prompts, solves all 164 problems,
+# and writes the solutions to results/bench-opus4.6-thinking/ (or bench-opus4.6/)
+
+# Step 3: After the agent finishes, evaluate the solutions in Docker sandbox
+cd benchmarks/evalplus
+./evaluate-claude.sh bench-opus4.6-thinking  # Evaluate thinking variant
+./evaluate-claude.sh bench-opus4.6           # Evaluate non-thinking variant
+# This runs the same test suite as local models and updates REPORT.md
+```
+
 ## How it works
 
 1. **Code generation (host)** — EvalPlus sends 164 coding prompts to the llama.cpp OpenAI-compatible API (`localhost:8080/v1`). The model generates Python code for each problem. This runs on the host using the evalplus Python package.
@@ -52,9 +103,9 @@ Before running all 6 models, test with the fastest/smallest model to verify the 
 ./run-benchmark.sh bench-glm-flash-q4
 ```
 
-This runs GLM-4.7 Flash Q4_K_M (smallest model, fits in VRAM) through the complete cycle: start server → generate code → stop server → evaluate in sandbox → generate report. Takes roughly 30-60 minutes.
+This runs GLM-4.7 Flash Q4_K_M (smallest model, fits in VRAM) through the complete cycle: start server → generate code → stop server → evaluate in sandbox → generate report.
 
-Check the output for errors. If it completes and produces `results/bench-glm-flash-q4/eval_results.json`, the pipeline works.
+Check the output for errors. If it completes and produces results in `results/bench-glm-flash-q4/`, the pipeline works.
 
 ### Full run (all models)
 
@@ -64,24 +115,22 @@ Once the smoke test passes, run all 6 benchmark profiles:
 ./run-benchmark.sh
 ```
 
-This runs all `bench-*` profiles from `models.conf` sequentially — one model at a time, each going through the full generate → evaluate cycle. **Expect ~6 hours total.** Best started before leaving or overnight.
+This runs all `bench-*` profiles from `models.conf` sequentially — one model at a time, each going through the full generate → evaluate cycle. Best started before leaving or overnight.
 
-### Other commands
+### Re-running a model
+
+Delete old results first, then run again:
 
 ```bash
-# Run specific model(s)
-./run-benchmark.sh bench-qwen3-coder bench-gpt-oss-120b
-
-# List available benchmark profiles
-./run-benchmark.sh --list
-
-# Regenerate comparison report from existing results (no benchmarking)
-./run-benchmark.sh --report
+rm -rf results/bench-glm-flash/
+./run-benchmark.sh bench-glm-flash
 ```
+
+Without deleting, evalplus skips code generation because results already exist.
 
 ## Benchmark profiles
 
-Benchmark profiles are defined in `models.conf` with a `bench-` prefix. They use the same model files and GPU layer splits as production, but with reduced context (16K instead of 64K-256K) since HumanEval+ problems need <1,300 tokens max (verified in evalplus source: `max_new_tokens=768`).
+Benchmark profiles are defined in `models.conf` with a `bench-` prefix. They use the same model files and GPU layer splits as production, but with reduced context (16K instead of 64K-256K) to save VRAM.
 
 | Profile | Model | Notes |
 |---------|-------|-------|
@@ -92,6 +141,8 @@ Benchmark profiles are defined in `models.conf` with a `bench-` prefix. They use
 | `bench-qwen3-coder-ud-q6` | Qwen3-Coder-Next UD-Q6_K_XL | Coding baseline |
 | `bench-qwen3-coder-q6k` | Qwen3-Coder-Next Q6_K | Standard quant |
 
+To view or edit profiles: `./run-benchmark.sh --list` or edit `models.conf` directly.
+
 ## Output
 
 Results are saved per model in `results/<model-id>/`:
@@ -101,31 +152,15 @@ results/
 ├── bench-glm-flash-q4/
 │   ├── humaneval/
 │   │   └── <samples>.jsonl     # Generated code (164 solutions)
-│   ├── eval_results.json       # Pass/fail scores (parsed by report generator)
 │   ├── codegen.log             # Code generation output
 │   └── evaluation.log          # Docker sandbox evaluation output
-├── bench-qwen3-coder/
+├── bench-qwen3-coder-ud-q6/
 │   └── ...
-└── REPORT.md                   # Comparison report (auto-generated after run)
+├── REPORT.md                   # Comparison report (auto-generated)
+└── NOTES_max_tokens.md         # Notes on discarded run 1 (max_tokens=768)
 ```
 
 The comparison report (`REPORT.md`) includes local scores alongside published scores from proprietary models (Claude, GPT, DeepSeek, etc.) sourced from `reference-scores.json`.
-
-## Troubleshooting
-
-- **"Python venv not found"** — Run the one-time setup steps above.
-- **"Container llama-server is already running"** — Stop it first: `docker compose -f ../../docker-compose.yml down`
-- **Server fails to start** — Check that the model file exists. The script logs the last 30 lines from the container on failure.
-- **Timeout waiting for health** — Large models (GPT-OSS 120B) can take several minutes to load. The default timeout is 10 minutes. If that's not enough, increase `HEALTH_TIMEOUT` in `run-benchmark.sh`.
-- **Evaluation produces unexpected results** — Check `evaluation.log` in the model's results directory. The Docker sandbox needs to pull `ganler/evalplus:latest` on first run.
-- **Want to re-run a single model** — Just run it again: `./run-benchmark.sh bench-qwen3-coder`. Results are overwritten per model.
-- **Interrupted mid-run** — Safe to restart. The script stops the container on each model transition. Completed results are preserved.
-
-## Technical notes
-
-- EvalPlus uses `--greedy` (temperature=0), which overrides server-side sampler settings via the API. The sampler defaults in `models.conf` are for production use, not benchmarks.
-- The evalplus Docker sandbox (`ganler/evalplus`) has no network access — it only gets a volume mount with the generated code files.
-- The script reuses the same `docker-compose.yml` and `.env` mechanism as `start.sh`, so hardware-specific GPU splits are identical to production.
 
 ## Claude Opus 4.6 benchmark
 
@@ -169,6 +204,18 @@ This runs the same Docker sandbox evaluation as the local models and updates REP
 - "vs FP16 ref" in the report compares against the published Opus 4.5 score (no Opus 4.6 reference available)
 - If context runs out mid-session, the agent writes partial results with instructions on where to continue
 
-## Adding MBPP+ later
+## Troubleshooting
 
-EvalPlus also supports MBPP+ (378 problems). To add it, change `--dataset humaneval` to `--dataset mbpp` in `run-benchmark.sh` or add a `--dataset` flag.
+- **"Python venv not found"** — Run the one-time setup steps above.
+- **"Container llama-server is already running"** — Stop it first: `docker compose -f ../../docker-compose.yml down`
+- **Server fails to start** — Check that the model file exists. The script logs the last 30 lines from the container on failure.
+- **Timeout waiting for health** — Large models (GPT-OSS 120B) can take several minutes to load. The default timeout is 10 minutes. If that's not enough, increase `HEALTH_TIMEOUT` in `run-benchmark.sh`.
+- **Evaluation produces unexpected results** — Check `evaluation.log` in the model's results directory. The Docker sandbox needs to pull `ganler/evalplus:latest` on first run.
+- **Interrupted mid-run** — Safe to restart. The script stops the container on each model transition. Completed results are preserved.
+
+## Technical notes
+
+- EvalPlus uses `--greedy` (temperature=0), which overrides server-side sampler settings via the API. The sampler defaults in `models.conf` are for production use, not benchmarks.
+- The evalplus Docker sandbox (`ganler/evalplus`) has no network access — it only gets a volume mount with the generated code files.
+- The script reuses the same `docker-compose.yml` and `.env` mechanism as `start.sh`, so hardware-specific GPU splits are identical to production.
+- EvalPlus also supports MBPP+ (378 problems). To add it, change `--dataset humaneval` to `--dataset mbpp` in `run-benchmark.sh` or add a `--dataset` flag.
