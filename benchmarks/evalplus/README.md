@@ -35,9 +35,11 @@ Each model goes through 4 steps:
 | `postprocess-solutions.py` | Extracts clean Python code from raw model output (strips think tags, markdown fences, explanatory text) |
 | `evaluate.sh` | Runs evalplus evaluation on post-processed solutions |
 | `generate-report.py` | Generates markdown comparison report from eval results + reference scores |
+| `codegen-custom.py` | Custom codegen with system prompt support (used when `bench-client.conf` specifies a system prompt for a model) |
 | `run-claude-benchmark.py` | Claude codegen via `claude -p` (Claude Code non-interactive mode) |
+| `bench-client.conf` | Client-side config per model (system prompts, reasoning levels). Separate from `models.conf` (server config). |
 | `extract-prompts.py` | One-time utility to extract HumanEval prompts from evalplus into JSON (already done) |
-| `humaneval_prompts.json` | The 164 HumanEval problem prompts — used by `run-claude-benchmark.py` |
+| `humaneval_prompts.json` | The 164 HumanEval problem prompts — used by `codegen-custom.py` and `run-claude-benchmark.py` |
 | `reference-scores.json` | Published scores for proprietary models (Claude, GPT, DeepSeek, etc.) — used by `generate-report.py` |
 
 ### Existing data handling
@@ -116,6 +118,21 @@ Claude benchmarks use `claude -p` (Claude Code's non-interactive print mode). Re
 ```
 
 Regenerates `results/REPORT.md` from existing evaluation results without re-running any models.
+
+## Server vs client config
+
+Configuration is split between two files:
+
+- **`models.conf`** (project root) — **Server config.** Controls how `llama-server` starts: model file, context size, GPU layers, server flags. Used by `start.sh` and `benchmark.sh` to generate `.env`.
+- **`bench-client.conf`** (this directory) — **Client config.** Settings sent by the benchmark client *to* the API: system prompts, reasoning levels. Only models that need special client-side config are listed here. Models without an entry use `evalplus.codegen` with default behavior.
+
+When `bench-client.conf` specifies a `SYSTEM_PROMPT` for a model, `codegen-custom.py` is used instead of `evalplus.codegen` (because evalplus doesn't support system prompts). The system prompt is sent in the messages array of the API call.
+
+Example: GPT-OSS 120B uses a system prompt trigger for reasoning levels:
+```ini
+[bench-gpt-oss-120b]
+SYSTEM_PROMPT=Reasoning: low
+```
 
 ## Benchmark profiles
 

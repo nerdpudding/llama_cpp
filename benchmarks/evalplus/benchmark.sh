@@ -30,6 +30,9 @@ REPORT_SCRIPT="$SCRIPT_DIR/generate-report.py"
 CLAUDE_SCRIPT="$SCRIPT_DIR/run-claude-benchmark.py"
 REFERENCE_FILE="$SCRIPT_DIR/reference-scores.json"
 
+# Client config (system prompts etc. — separate from server config in models.conf)
+CLIENT_CONF="$SCRIPT_DIR/bench-client.conf"
+
 # Claude benchmark model IDs (not in models.conf)
 CLAUDE_MODELS=("bench-opus4.6-thinking" "bench-opus4.6")
 
@@ -58,6 +61,31 @@ parse_conf() {
 }
 
 get() { echo "${CONFIG["${1}.${2}"]:-}"; }
+
+# --- Client config parser (bench-client.conf) --------------------------------
+
+declare -A CLIENT_CONFIG=()
+
+parse_client_conf() {
+    [[ ! -f "$CLIENT_CONF" ]] && return 0
+    local section=""
+    while IFS= read -r line || [[ -n "$line" ]]; do
+        line="${line#"${line%%[![:space:]]*}"}"
+        line="${line%"${line##*[![:space:]]}"}"
+        [[ -z "$line" || "$line" == \#* ]] && continue
+        if [[ "$line" =~ ^\[([a-zA-Z0-9_.-]+)\]$ ]]; then
+            section="${BASH_REMATCH[1]}"
+            continue
+        fi
+        if [[ -n "$section" && "$line" == *=* ]]; then
+            local key="${line%%=*}"
+            local value="${line#*=}"
+            CLIENT_CONFIG["${section}.${key}"]="$value"
+        fi
+    done < "$CLIENT_CONF"
+}
+
+get_client() { echo "${CLIENT_CONFIG["${1}.${2}"]:-}"; }
 
 die() { echo "ERROR: $*" >&2; exit 1; }
 
@@ -217,9 +245,10 @@ generate_env() {
 run_codegen_local() {
     local model_id="$1"
     local model_name; model_name=$(get "$model_id" NAME)
+    local sys_prompt; sys_prompt=$(get_client "$model_id" SYSTEM_PROMPT)
 
     generate_env "$model_id"
-    "$CODEGEN_SCRIPT" "$model_id" "$model_name" "$RESULTS_DIR" "$PROJECT_DIR"
+    "$CODEGEN_SCRIPT" "$model_id" "$model_name" "$RESULTS_DIR" "$PROJECT_DIR" "$sys_prompt"
 }
 
 run_codegen_claude() {
@@ -300,6 +329,7 @@ run_model() {
 [[ ! -f "$CONF" ]] && die "Config file not found: $CONF"
 
 parse_conf
+parse_client_conf
 
 # Collect bench-* model IDs from models.conf
 local_bench_ids=()

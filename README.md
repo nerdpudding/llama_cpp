@@ -61,7 +61,7 @@ Ollama doesn't support the features needed for this hardware and these models:
 ├── docker-compose.example.yml     # Annotated template with usage instructions
 ├── .dockerignore
 ├── .gitignore
-├── models.conf                    # Central model configuration (all models)
+├── models.conf                    # Server configuration (all models)
 ├── start.sh                       # Model selector script (generates .env, launches dashboard)
 ├── dashboard.py                   # Terminal monitoring dashboard (curses TUI)
 ├── .env.example                   # Generic template with all variables documented
@@ -80,6 +80,7 @@ Ollama doesn't support the features needed for this hardware and these models:
 ├── benchmarks/
 │   └── evalplus/                  # EvalPlus HumanEval+ coding benchmark runner
 │       ├── benchmark.sh           # Main runner (orchestrates all steps)
+│       ├── bench-client.conf      # Client-side config (system prompts per model)
 │       ├── generate-report.py     # Results → comparison table
 │       ├── reference-scores.json  # Published proprietary model scores
 │       └── results/               # Benchmark outputs (gitignored)
@@ -175,6 +176,10 @@ Available models (defined in `models.conf`):
 | `qwen3-coder` | Qwen3-Coder-Next UD-Q6_K_XL (baseline) | 21.4 t/s | 256K |
 | `qwen3-coder-q6k` | Qwen3-Coder-Next Q6_K | ~21 t/s | 256K |
 
+### Model-specific notes
+
+**GPT-OSS 120B reasoning levels:** GPT-OSS supports configurable reasoning effort (low/medium/high) but controls it via a system prompt trigger (`"Reasoning: high"`), not a server flag. llama-server's `--system-prompt` flag is excluded from the server binary, so this cannot be set in `models.conf` or `EXTRA_ARGS`. Set it in the system prompt field of your client (web UI, API call, agentic framework). See the [model card](models/documentation/README_modelcard_gpt-oss-120b-GGUF.md) for details.
+
 ## Benchmarks
 
 The project includes an [EvalPlus HumanEval+](benchmarks/evalplus/README.md) coding benchmark runner that tests all models against 164 Python problems and compares results with proprietary models (Claude, GPT, DeepSeek, etc.).
@@ -187,7 +192,7 @@ source .venv/bin/activate       # One-time setup: uv venv && uv pip install eval
 ./benchmark.sh --all                    # All models (local + Claude)
 ```
 
-Code generation runs on the host via the llama.cpp API; evaluation runs in a Docker sandbox for safety. Claude Opus 4.6 can also be benchmarked using a custom Claude Code agent that solves each problem without code execution or internet access. See [benchmarks/evalplus/README.md](benchmarks/evalplus/README.md) for full setup and usage.
+Code generation runs on the host via the llama.cpp API; evaluation runs in a Docker sandbox for safety. Server config (model, GPU layers) comes from `models.conf`; client config (system prompts, reasoning levels) comes from `benchmarks/evalplus/bench-client.conf`. Claude Opus 4.6 can also be benchmarked using a custom Claude Code agent that solves each problem without code execution or internet access. See [benchmarks/evalplus/README.md](benchmarks/evalplus/README.md) for full setup and usage.
 
 ## Updating llama.cpp
 

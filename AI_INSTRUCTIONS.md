@@ -1,0 +1,139 @@
+# AI Instructions — llama.cpp Docker Wrapper
+
+## Project overview
+
+Custom llama.cpp Docker build for a dual-GPU desktop (RTX 4090 24GB + RTX 5070 Ti 16GB). Serves large MoE models via llama-server with precise GPU/CPU tensor placement using `-ot` regex overrides. Includes an EvalPlus HumanEval+ benchmark pipeline.
+
+## Principles
+
+- **SOLID, DRY, KISS** — always. No over-engineering, no premature abstractions.
+- **One source of truth** — no duplicate information across files.
+- **Never delete, always archive** — outdated content goes to `archive/`.
+- **Modularity** — keep server config, client config, and scripts cleanly separated.
+- **Keep everything up to date** — after any change, verify that READMEs, docs, agent instructions, and config files still reflect reality. Stale docs are worse than no docs.
+- **Use agents when their role fits** — don't do manually what an agent is designed for. Check the agents table below before starting a task.
+
+## Workflow
+
+For non-trivial changes, follow this order:
+
+1. **Plan** — create a plan in `claude_plans/` with a logical name
+2. **Ask for approval** — present the plan to the user before implementing
+3. **Implement** — follow the approved plan, use the best approach
+4. **Test** — verify changes work (sometimes manual with user involvement)
+5. **Iterate** — if tests reveal issues, fix and re-test
+6. **Clean up** — archive completed plans, remove unused files (to archive), update docs and agent instructions if affected
+
+## Project hierarchy
+
+```
+.
+├── AI_INSTRUCTIONS.md                # THIS FILE — read first
+├── README.md                         # Project overview and usage
+├── ROADMAP.md                        # Future plans and status
+├── models.conf                       # SERVER config (model, GPU layers, context, flags)
+├── start.sh                          # Interactive model selector → .env → dashboard
+├── dashboard.py                      # Terminal monitoring TUI (curses)
+├── Dockerfile                        # Multi-stage build (CUDA 13.0, sm_89+sm_120)
+├── docker-compose.yml                # Production compose file
+├── docker-compose.example.yml        # Annotated template with usage instructions
+├── .env.example                      # Generic template with all variables documented
+├── docs/                             # Technical documentation
+│   ├── gpt-oss-120b-configuration-guide.md
+│   └── llama-cpp-flags-and-qwen3-strategy.md
+├── models/                           # GGUF model files (gitignored)
+│   ├── documentation/                # Model cards from HuggingFace
+│   │   ├── README_modelcard_GLM-4.7-Flash.md
+│   │   ├── README_modelcard_gpt-oss-120b-GGUF.md
+│   │   └── README_modelcard_qwen3_coder_next.md
+│   ├── GLM-4.7-Flash/
+│   ├── GPT-OSS-120b/
+│   └── Qwen3-Coder-Next/
+│       ├── Q6_K/
+│       ├── UD-Q5_K_XL/
+│       └── UD-Q6_K_XL/
+├── benchmarks/
+│   └── evalplus/                     # EvalPlus HumanEval+ benchmark pipeline
+│       ├── README.md                 # ** Detailed benchmark docs — read this for benchmark work **
+│       ├── benchmark.sh              # Main runner (codegen → postprocess → evaluate → report)
+│       ├── codegen.sh                # Local model code generation (server lifecycle)
+│       ├── codegen-custom.py         # Custom codegen with system prompt support
+│       ├── postprocess-solutions.py  # Strips think tags, markdown, explanatory text
+│       ├── evaluate.sh               # Runs evalplus evaluation
+│       ├── generate-report.py        # Generates comparison report
+│       ├── run-claude-benchmark.py   # Claude codegen via claude -p
+│       ├── bench-client.conf         # CLIENT config for benchmarks (system prompts)
+│       ├── extract-prompts.py        # One-time utility (already run)
+│       ├── humaneval_prompts.json    # 164 HumanEval problem prompts
+│       ├── reference-scores.json     # Published proprietary model scores
+│       └── results/                  # Benchmark outputs (gitignored)
+├── claude_plans/                     # Active plans (see Plan rules below)
+├── archive/                          # Archived plans, old docs, superseded files
+│   └── env-templates/                # Archived per-model .env files (replaced by models.conf)
+├── llama.cpp/                        # llama.cpp source (separate git repo, gitignored)
+└── .claude/
+    └── agents/                       # Claude Code specialized agents
+        ├── benchmark.md
+        ├── builder.md
+        ├── diagnose.md
+        ├── model-manager.md
+        └── api-integration.md
+```
+
+## Key config files
+
+| File | Scope | Purpose |
+|------|-------|---------|
+| `models.conf` | Server | How llama-server starts: MODEL, CTX_SIZE, N_GPU_LAYERS, FIT, EXTRA_ARGS |
+| `bench-client.conf` | Client (benchmarks) | What the benchmark client sends to the API: system prompts, reasoning levels |
+| `.env` | Generated | Auto-generated from models.conf by start.sh / benchmark.sh — never edit manually |
+
+**Separation of concerns:** `models.conf` = server startup config. Client-side settings (system prompts, reasoning levels) go in `bench-client.conf` for benchmarks or are set in the client UI/API for interactive use. Never mix them.
+
+## Agents
+
+Use agents when their role matches the task. Don't reinvent what an agent already handles.
+
+| Agent | File | When to use |
+|-------|------|-------------|
+| `benchmark` | `.claude/agents/benchmark.md` | Running EvalPlus benchmarks, comparing model performance, analyzing results |
+| `builder` | `.claude/agents/builder.md` | Building/rebuilding Docker image, updating llama.cpp, fixing build errors |
+| `diagnose` | `.claude/agents/diagnose.md` | System status, GPU health, VRAM usage, container troubleshooting |
+| `model-manager` | `.claude/agents/model-manager.md` | Downloading, organizing, verifying models, quantization advice |
+| `api-integration` | `.claude/agents/api-integration.md` | Configuring/testing API integration, OpenAI-compatible client setup |
+
+After implementing changes that affect an agent's domain, update that agent's instructions if needed.
+
+## Plan rules
+
+Plans are stored in: **`/home/rvanpolen/vibe_claude_kilo_cli_exp/llama_cpp/claude_plans/`**
+
+1. **Always save plans as files** — plans must be persistent, never just in conversation.
+2. **Use logical names** — e.g. `PLAN_fair_postprocessing_benchmark.md`. If plan mode generates a random name, rename it immediately.
+3. **No duplicates** — if a plan already exists for the same topic, update it instead of creating a new one.
+4. **Archive when done** — completed plans move to `archive/` with a date prefix: `2026-02-15_fair_postprocessing_benchmark.md`.
+
+## Archive rules
+
+Everything goes to: **`/home/rvanpolen/vibe_claude_kilo_cli_exp/llama_cpp/archive/`**
+
+- Completed plans (from `claude_plans/`)
+- Superseded documentation
+- Old scripts replaced by new ones
+- Outdated daily schedules or todo files
+
+Never delete files. Always archive.
+
+## Git commits
+
+- Write normal, descriptive commit messages.
+- Never add "Co-Authored-By: Claude" or AI attribution.
+- Only commit when explicitly asked.
+
+## After compaction
+
+When resuming after compaction, read in this order:
+1. This file (`AI_INSTRUCTIONS.md`)
+2. Current task tracker if one exists (e.g. `todo_15_feb.md`)
+3. Active plans in `claude_plans/`
+4. Then continue with the task

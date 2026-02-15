@@ -2,27 +2,33 @@
 # =============================================================================
 # codegen.sh — Code generation for local models via llama.cpp API
 #
-# Starts the model server, runs evalplus code generation, stops the server.
+# Starts the model server, runs code generation, stops the server.
 # Called by benchmark.sh (which generates .env beforehand).
 #
+# Uses evalplus.codegen by default. When a system prompt is provided
+# (5th argument), uses codegen-custom.py instead (evalplus doesn't
+# support system prompts).
+#
 # Usage:
-#   ./codegen.sh <model-id> <model-name> <results-dir> <project-dir>
+#   ./codegen.sh <model-id> <model-name> <results-dir> <project-dir> [system-prompt]
 # =============================================================================
 
 set -euo pipefail
 
 SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
 VENV_DIR="$SCRIPT_DIR/.venv"
+VENV_PYTHON="$VENV_DIR/bin/python"
+CUSTOM_CODEGEN="$SCRIPT_DIR/codegen-custom.py"
 
-MODEL_ID="${1:?Usage: $0 <model-id> <model-name> <results-dir> <project-dir>}"
-MODEL_NAME="${2:?Usage: $0 <model-id> <model-name> <results-dir> <project-dir>}"
-RESULTS_DIR="${3:?Usage: $0 <model-id> <model-name> <results-dir> <project-dir>}"
-PROJECT_DIR="${4:?Usage: $0 <model-id> <model-name> <results-dir> <project-dir>}"
+MODEL_ID="${1:?Usage: $0 <model-id> <model-name> <results-dir> <project-dir> [system-prompt]}"
+MODEL_NAME="${2:?Usage: $0 <model-id> <model-name> <results-dir> <project-dir> [system-prompt]}"
+RESULTS_DIR="${3:?Usage: $0 <model-id> <model-name> <results-dir> <project-dir> [system-prompt]}"
+PROJECT_DIR="${4:?Usage: $0 <model-id> <model-name> <results-dir> <project-dir> [system-prompt]}"
+SYSTEM_PROMPT="${5:-}"
 
 COMPOSE_FILE="$PROJECT_DIR/docker-compose.yml"
 HEALTH_URL="http://localhost:8080/health"
 HEALTH_TIMEOUT=600  # 10 minutes — large models need time to load
-EVALPLUS_DOCKER="ganler/evalplus:latest"
 
 log() { echo "[$(date '+%H:%M:%S')] $*"; }
 
@@ -72,17 +78,29 @@ if ! wait_for_health; then
     exit 1
 fi
 
-# Run evalplus codegen
-log "Running code generation..."
+# Run code generation
 codegen_ok=true
-"$VENV_DIR/bin/evalplus.codegen" \
-    --model "$MODEL_NAME" \
-    --dataset humaneval \
-    --base-url http://localhost:8080/v1 \
-    --backend openai \
-    --greedy \
-    --root "$OUTPUT_DIR" \
-    2>&1 | tee "$OUTPUT_DIR/codegen.log"
+
+if [[ -n "$SYSTEM_PROMPT" ]]; then
+    # Custom codegen with system prompt (evalplus doesn't support system prompts)
+    log "Running custom codegen (system prompt: $SYSTEM_PROMPT)..."
+    "$VENV_PYTHON" "$CUSTOM_CODEGEN" \
+        --model-name "$MODEL_NAME" \
+        --system-prompt "$SYSTEM_PROMPT" \
+        --output-dir "$OUTPUT_DIR" \
+        2>&1 | tee "$OUTPUT_DIR/codegen.log"
+else
+    # Standard evalplus codegen (no system prompt needed)
+    log "Running evalplus codegen..."
+    "$VENV_DIR/bin/evalplus.codegen" \
+        --model "$MODEL_NAME" \
+        --dataset humaneval \
+        --base-url http://localhost:8080/v1 \
+        --backend openai \
+        --greedy \
+        --root "$OUTPUT_DIR" \
+        2>&1 | tee "$OUTPUT_DIR/codegen.log"
+fi
 
 rc=${PIPESTATUS[0]}
 if [[ $rc -ne 0 ]]; then
