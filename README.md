@@ -44,11 +44,11 @@ Ollama doesn't support the features needed for this hardware and these models:
 
 | Model | File Size | Speed | Context | Use Case |
 |-------|-----------|-------|---------|----------|
-| GLM-4.7 Flash Q8_0 | 30 GB | Fast (fits in VRAM) | 128K | Quick tasks, fits entirely on GPU |
-| GPT-OSS 120B F16 | 61 GB | ~20 t/s | 64K | Large MoE, partial CPU offload |
-| Qwen3-Coder-Next UD-Q6_K_XL | 64 GB | 21.4 t/s | 256K | Coding baseline, best quality |
-| Qwen3-Coder-Next UD-Q5_K_XL | 57 GB | 25.8 t/s | 256K | Coding speed option |
-| Qwen3-Coder-Next Q6_K | 66 GB | ~21 t/s | 256K | Standard quant alternative |
+| GLM-4.7 Flash Q4_K_M | 18 GB | ~140 t/s | 128K | Fast tasks, single GPU (Strategy A) |
+| GLM-4.7 Flash Q8_0 | 30 GB | ~105 t/s | 128K | Higher quality, dual GPU (Strategy C) |
+| GPT-OSS 120B F16 | 61 GB | ~22 t/s | 64K | Large MoE, partial CPU offload (Strategy D) |
+| Qwen3-Coder-Next UD-Q6_K_XL | 64 GB | ~24 t/s | 256K | Coding baseline, best quality |
+| Qwen3-Coder-Next UD-Q5_K_XL | 57 GB | ~30 t/s | 256K | Coding speed option |
 
 ## Repository Structure
 
@@ -66,6 +66,9 @@ Ollama doesn't support the features needed for this hardware and these models:
 ├── dashboard.py                   # Terminal monitoring dashboard (curses TUI)
 ├── .env.example                   # Generic template with all variables documented
 ├── docs/
+│   ├── gpu-strategy-guide.md              # GPU placement decision tree
+│   ├── bench-test-results.md              # Benchmark optimization results
+│   ├── lessons_learned.md                 # Mistakes and prevention rules
 │   ├── gpt-oss-120b-configuration-guide.md
 │   └── llama-cpp-flags-and-qwen3-strategy.md
 ├── models/                        # GGUF files (gitignored)

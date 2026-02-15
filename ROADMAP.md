@@ -2,15 +2,15 @@
 
 ## Current Status
 
-Seven models are configured in `models.conf` and selectable via `./start.sh` on a dual-GPU desktop (RTX 4090 + RTX 5070 Ti):
+Five models are configured in `models.conf` and selectable via `./start.sh` on a dual-GPU desktop (RTX 4090 + RTX 5070 Ti):
 
-- **GLM-4.7 Flash Q4_K_M / Q8_0 / experimental** — fits entirely in VRAM, 128K context
-- **GPT-OSS 120B F16** — ~20 t/s, 64K context, large MoE with CPU expert offloading
-- **Qwen3-Coder-Next UD-Q5_K_XL** — 25.8 t/s, 256K context, speed alternative
-- **Qwen3-Coder-Next UD-Q6_K_XL** — 21.4 t/s, 256K context, baseline for coding tasks
-- **Qwen3-Coder-Next Q6_K** — ~21 t/s, 256K context, standard quant alternative
+- **GLM-4.7 Flash Q4_K_M** — ~140 t/s, 128K context, single GPU (Strategy A)
+- **GLM-4.7 Flash Q8_0** — ~105 t/s, 128K context, dual GPU split (Strategy C)
+- **GPT-OSS 120B F16** — ~22 t/s, 64K context, large MoE with CPU expert offloading (Strategy D)
+- **Qwen3-Coder-Next UD-Q5_K_XL** — ~30 t/s, 256K context, coding speed option
+- **Qwen3-Coder-Next UD-Q6_K_XL** — ~24 t/s, 256K context, coding baseline
 
-MoE models use optimized `-ot` regex configurations for per-layer GPU/CPU tensor placement. Tested configurations are documented in `docs/` with memory breakdowns, VRAM utilization, and performance data.
+All models are MoE. GPU placement uses optimized `-ot` regex configurations for per-layer tensor placement. See `docs/gpu-strategy-guide.md` for the decision tree and `docs/bench-test-results.md` for measured performance data.
 
 **Monitoring dashboard:** `start.sh` now launches the container in the background, waits for server health, and opens a Python curses TUI (`dashboard.py`) with four panels: server logs (scrollable), per-GPU VRAM/utilization/power/temp monitoring, system stats (CPU/RAM/swap/container), and keyboard controls (`q` stop & exit, `r` stop & return to menu). Docker healthcheck is also configured for container-level health awareness. Use `--no-dashboard` for raw log output.
 
@@ -18,10 +18,10 @@ MoE models use optimized `-ot` regex configurations for per-layer GPU/CPU tensor
 
 ### Formal benchmarks (EvalPlus HumanEval+)
 - EvalPlus benchmark runner in `benchmarks/evalplus/` — runs HumanEval+ (164 Python problems) against all models via the llama.cpp OpenAI API
-- 6 benchmark profiles in `models.conf` (bench-*) with reduced 16K context
+- 5 benchmark profiles in `models.conf` (bench-*) with reduced 10K context
 - Code generation on host, evaluation in Docker sandbox (`ganler/evalplus`) for safety
 - Comparison report with published scores for proprietary models (Claude, GPT, DeepSeek, Codestral, etc.)
-- Claude Opus 4.6 benchmark via custom Claude Code agent (Max subscription) — solves problems from prompts only, no code execution or internet. Agents in `.claude/agents/humaneval-solver*.md`, run via `benchmarks/evalplus/benchmark.sh`
+- Claude Opus 4.6 benchmark via `claude -p` CLI (Max subscription) — solves problems from prompts only, no code execution or internet. Run via `benchmarks/evalplus/benchmark.sh`
 - Production sampler settings updated per official model card recommendations
 - See `benchmarks/evalplus/README.md` for setup and usage
 

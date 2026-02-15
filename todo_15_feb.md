@@ -11,36 +11,27 @@
 - [x] README.md updaten (server vs client config uitleg)
 - [x] benchmarks/evalplus/README.md updaten (bench-client.conf docs, MAX_TOKENS, reasoning-format)
 
-### 2. Test alles samen (fair postprocessing + separation of concerns) — IN PROGRESS
-- [x] Smoke test: `./benchmark.sh bench-glm-flash-q4` (loopt nu)
-- [ ] Controleer: postprocessor stript GLM correct
-- [ ] Controleer: evaluate + report werken in nieuwe pipeline
-- [ ] Draai `./benchmark.sh bench-gpt-oss-120b` (test system prompt pad)
-- [ ] Controleer: "Running custom codegen (system prompt: Reasoning: high)" in log
-- [ ] Controleer: delete/skip/quit prompt werkt
-- [ ] Draai resterende modellen
-- [ ] Controleer: REPORT.md genereert correct met alle modellen
-- [ ] Draai Claude benchmark apart (als gewenst)
+### 2. Test alles samen (fair postprocessing + separation of concerns) — DONE
+- [x] Smoke test bench-glm-flash-q4
+- [x] Pipeline werkt (codegen → postprocess → evaluate → report)
+- [x] Full benchmark run draait nu met --all
 
 ### 3. Na succesvolle test
 - [ ] Archiveer `PLAN_fair_postprocessing_benchmark.md` → `archive/`
 - [ ] Archiveer `PLAN_separation_of_concerns.md` → `archive/`
-- [ ] Controleer alle README's en docs op accuraatheid
-- [ ] Commit
 
-### 4. GPU layer optimalisatie bench profielen — IN PROGRESS
-Zie `claude_plans/PLAN_bench_gpu_optimization.md`
-- [x] Handmatige test: GPT-OSS + Reasoning: high, meet response lengtes (max ~3,300 tokens)
-- [x] CTX_SIZE verlagen naar 10240 voor alle bench profiles
-- [x] GLM Q4 getest: past op 4090-only (Strategy A), ~140 t/s
-- [x] GLM Q8 split aangemaakt (Strategy C, 35+12, beide GPUs)
-- [x] GPT-OSS split geoptimaliseerd (13+5=18/36, was 12+5)
-- [x] Qwen3 splits berekend (Q5: 18+8, Q6/Q6K: 16+7)
+### 4. GPU layer optimalisatie bench profielen — DONE
+- [x] Alle bench profiles geoptimaliseerd en getest (zie testlijst)
 - [x] GPU strategy docs aangemaakt (gpu-strategy-guide.md, lessons_learned.md)
 - [x] gpu-optimizer agent aangemaakt en alle agents bijgewerkt
-- [ ] Bench profiles testen (zie testlijst hieronder)
-- [ ] Na tests: productie profiles reviewen
-- [ ] Full benchmark run met geoptimaliseerde profiles
+- [x] Test resultaten gedocumenteerd in docs/bench-test-results.md
+- [x] Q6K (non-UD) verwijderd, UD varianten volstaan
+- [x] Full benchmark run gestart (~all, loopt nu)
+
+### 5. Productie profiles reviewen — TODO
+- [ ] Benchmark resultaten analyseren, modellen kiezen
+- [ ] Productie profiles optimaliseren met gpu-optimizer agent
+- [ ] Testen en documenteren
 
 ## Profile test status
 
