@@ -91,6 +91,30 @@ die() { echo "ERROR: $*" >&2; exit 1; }
 
 log() { echo "[$(date '+%H:%M:%S')] $*"; }
 
+# --- Evalplus max_tokens patch ------------------------------------------------
+# evalplus hardcodes max_new_tokens=768, which truncates chat model output.
+# No CLI flag exists, so we patch provider/base.py with the value from
+# bench-client.conf [defaults] MAX_TOKENS.
+
+patch_evalplus_max_tokens() {
+    local max_tokens; max_tokens=$(get_client "defaults" MAX_TOKENS)
+    [[ -z "$max_tokens" ]] && return 0
+
+    local base_py="$VENV_DIR/lib/python3.12/site-packages/evalplus/provider/base.py"
+    if [[ ! -f "$base_py" ]]; then
+        log "WARNING: evalplus base.py not found at $base_py — skipping max_tokens patch"
+        return 0
+    fi
+
+    if grep -q "max_new_tokens: int = ${max_tokens}" "$base_py" 2>/dev/null; then
+        log "evalplus max_new_tokens already set to $max_tokens"
+        return 0
+    fi
+
+    log "Patching evalplus max_new_tokens → $max_tokens"
+    sed -i "s/max_new_tokens: int = [0-9]*/max_new_tokens: int = ${max_tokens}/" "$base_py"
+}
+
 # --- Helpers ------------------------------------------------------------------
 
 get_bench_ids() {
@@ -193,13 +217,13 @@ check_existing_results() {
 
     echo ""
     echo "Results already exist for $model_id."
-    echo "  [o] Overwrite (delete existing, run fresh)"
+    echo "  [d] Delete existing and run fresh"
     echo "  [s] Skip this model"
     echo "  [q] Quit"
-    read -rp "Choice [o/s/q]: " choice
+    read -rp "Choice [d/s/q]: " choice
 
     case "$choice" in
-        o|O)
+        d|D)
             log "Deleting existing results for $model_id..."
             rm -rf "$RESULTS_DIR/$model_id"
             return 0
@@ -246,9 +270,11 @@ run_codegen_local() {
     local model_id="$1"
     local model_name; model_name=$(get "$model_id" NAME)
     local sys_prompt; sys_prompt=$(get_client "$model_id" SYSTEM_PROMPT)
+    local max_tokens; max_tokens=$(get_client "$model_id" MAX_TOKENS)
+    [[ -z "$max_tokens" ]] && max_tokens=$(get_client "defaults" MAX_TOKENS)
 
     generate_env "$model_id"
-    "$CODEGEN_SCRIPT" "$model_id" "$model_name" "$RESULTS_DIR" "$PROJECT_DIR" "$sys_prompt"
+    "$CODEGEN_SCRIPT" "$model_id" "$model_name" "$RESULTS_DIR" "$PROJECT_DIR" "$sys_prompt" "$max_tokens"
 }
 
 run_codegen_claude() {
@@ -453,6 +479,9 @@ if [[ "$has_local" == true ]]; then
 fi
 
 mkdir -p "$RESULTS_DIR"
+
+# Patch evalplus max_tokens from bench-client.conf
+patch_evalplus_max_tokens
 
 # Summary counters
 total=0

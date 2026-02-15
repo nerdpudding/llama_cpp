@@ -23,7 +23,8 @@ PROMPTS_FILE = SCRIPT_DIR / "humaneval_prompts.json"
 BASE_URL = "http://localhost:8080/v1/chat/completions"
 
 
-def generate_solution(prompt_text: str, system_prompt: str, model_name: str) -> str:
+def generate_solution(prompt_text: str, system_prompt: str, model_name: str,
+                      max_tokens: int = 4096) -> str:
     """Call local API for a single problem and return the response."""
     messages = [{"role": "user", "content": prompt_text}]
     if system_prompt:
@@ -33,7 +34,7 @@ def generate_solution(prompt_text: str, system_prompt: str, model_name: str) -> 
         "model": model_name,
         "messages": messages,
         "temperature": 0,
-        "max_tokens": 4096,
+        "max_tokens": max_tokens,
     }).encode()
 
     req = Request(BASE_URL, data=payload, headers={"Content-Type": "application/json"})
@@ -47,6 +48,7 @@ def main():
     parser = argparse.ArgumentParser(description="Custom codegen with system prompt")
     parser.add_argument("--model-name", required=True, help="Model name for API calls")
     parser.add_argument("--system-prompt", default="", help="System prompt to prepend")
+    parser.add_argument("--max-tokens", type=int, default=4096, help="Max tokens per response (default: 4096)")
     parser.add_argument("--output-dir", required=True, help="Output directory (results/<model-id>/)")
     args = parser.parse_args()
 
@@ -65,6 +67,7 @@ def main():
 
     print(f"Model:         {args.model_name}")
     print(f"System prompt: {args.system_prompt or '(none)'}")
+    print(f"Max tokens:    {args.max_tokens}")
     print(f"Problems:      {len(prompts)}")
     print(f"Output:        {output_file}")
     print()
@@ -77,7 +80,8 @@ def main():
             print(f"[{i+1}/{len(prompts)}] {task_id} ... ", end="", flush=True)
 
             try:
-                response = generate_solution(prompt_text, args.system_prompt, args.model_name)
+                response = generate_solution(prompt_text, args.system_prompt,
+                                             args.model_name, args.max_tokens)
 
                 entry = {"task_id": task_id, "solution": response}
                 out.write(json.dumps(entry) + "\n")

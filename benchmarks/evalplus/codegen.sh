@@ -10,7 +10,7 @@
 # support system prompts).
 #
 # Usage:
-#   ./codegen.sh <model-id> <model-name> <results-dir> <project-dir> [system-prompt]
+#   ./codegen.sh <model-id> <model-name> <results-dir> <project-dir> [system-prompt] [max-tokens]
 # =============================================================================
 
 set -euo pipefail
@@ -20,11 +20,12 @@ VENV_DIR="$SCRIPT_DIR/.venv"
 VENV_PYTHON="$VENV_DIR/bin/python"
 CUSTOM_CODEGEN="$SCRIPT_DIR/codegen-custom.py"
 
-MODEL_ID="${1:?Usage: $0 <model-id> <model-name> <results-dir> <project-dir> [system-prompt]}"
-MODEL_NAME="${2:?Usage: $0 <model-id> <model-name> <results-dir> <project-dir> [system-prompt]}"
-RESULTS_DIR="${3:?Usage: $0 <model-id> <model-name> <results-dir> <project-dir> [system-prompt]}"
-PROJECT_DIR="${4:?Usage: $0 <model-id> <model-name> <results-dir> <project-dir> [system-prompt]}"
+MODEL_ID="${1:?Usage: $0 <model-id> <model-name> <results-dir> <project-dir> [system-prompt] [max-tokens]}"
+MODEL_NAME="${2:?Usage: $0 <model-id> <model-name> <results-dir> <project-dir> [system-prompt] [max-tokens]}"
+RESULTS_DIR="${3:?Usage: $0 <model-id> <model-name> <results-dir> <project-dir> [system-prompt] [max-tokens]}"
+PROJECT_DIR="${4:?Usage: $0 <model-id> <model-name> <results-dir> <project-dir> [system-prompt] [max-tokens]}"
 SYSTEM_PROMPT="${5:-}"
+MAX_TOKENS="${6:-4096}"
 
 COMPOSE_FILE="$PROJECT_DIR/docker-compose.yml"
 HEALTH_URL="http://localhost:8080/health"
@@ -87,6 +88,7 @@ if [[ -n "$SYSTEM_PROMPT" ]]; then
     "$VENV_PYTHON" "$CUSTOM_CODEGEN" \
         --model-name "$MODEL_NAME" \
         --system-prompt "$SYSTEM_PROMPT" \
+        --max-tokens "$MAX_TOKENS" \
         --output-dir "$OUTPUT_DIR" \
         2>&1 | tee "$OUTPUT_DIR/codegen.log"
 else

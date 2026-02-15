@@ -48,10 +48,10 @@ When results already exist for a model, the runner asks:
 
 ```
 Results already exist for bench-glm-flash-q4.
-  [o] Overwrite (delete existing, run fresh)
+  [d] Delete existing and run fresh
   [s] Skip this model
   [q] Quit
-Choice [o/s/q]:
+Choice [d/s/q]:
 ```
 
 No manual `rm -rf` needed.
@@ -124,14 +124,24 @@ Regenerates `results/REPORT.md` from existing evaluation results without re-runn
 Configuration is split between two files:
 
 - **`models.conf`** (project root) — **Server config.** Controls how `llama-server` starts: model file, context size, GPU layers, server flags. Used by `start.sh` and `benchmark.sh` to generate `.env`.
-- **`bench-client.conf`** (this directory) — **Client config.** Settings sent by the benchmark client *to* the API: system prompts, reasoning levels. Only models that need special client-side config are listed here. Models without an entry use `evalplus.codegen` with default behavior.
+- **`bench-client.conf`** (this directory) — **Client config.** Settings sent by the benchmark client *to* the API: system prompts, reasoning levels, max tokens. The `[defaults]` section applies to all models; per-model sections can override.
+
+### System prompts
 
 When `bench-client.conf` specifies a `SYSTEM_PROMPT` for a model, `codegen-custom.py` is used instead of `evalplus.codegen` (because evalplus doesn't support system prompts). The system prompt is sent in the messages array of the API call.
 
-Example: GPT-OSS 120B uses a system prompt trigger for reasoning levels:
+### MAX_TOKENS
+
+`MAX_TOKENS` in `[defaults]` controls the maximum response length for code generation. At startup, `benchmark.sh` automatically patches evalplus's `provider/base.py` with this value (evalplus hardcodes 768 by default and has no CLI flag). The same value is passed to `codegen-custom.py` via `--max-tokens`. If evalplus is reinstalled, the patch is re-applied on the next benchmark run.
+
+### Example
+
 ```ini
+[defaults]
+MAX_TOKENS=4096
+
 [bench-gpt-oss-120b]
-SYSTEM_PROMPT=Reasoning: low
+SYSTEM_PROMPT=Reasoning: high
 ```
 
 ## Benchmark profiles
