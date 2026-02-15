@@ -40,6 +40,8 @@ For non-trivial changes, follow this order:
 ├── docker-compose.example.yml        # Annotated template with usage instructions
 ├── .env.example                      # Generic template with all variables documented
 ├── docs/                             # Technical documentation
+│   ├── gpu-strategy-guide.md           # ** GPU placement decision tree — read before configuring models **
+│   ├── lessons_learned.md              # Mistakes made and prevention rules
 │   ├── gpt-oss-120b-configuration-guide.md
 │   └── llama-cpp-flags-and-qwen3-strategy.md
 ├── models/                           # GGUF model files (gitignored)
@@ -74,12 +76,29 @@ For non-trivial changes, follow this order:
 ├── llama.cpp/                        # llama.cpp source (separate git repo, gitignored)
 └── .claude/
     └── agents/                       # Claude Code specialized agents
+        ├── gpu-optimizer.md
         ├── benchmark.md
         ├── builder.md
         ├── diagnose.md
         ├── model-manager.md
         └── api-integration.md
 ```
+
+## GPU strategy
+
+Before making any GPU placement decisions (layer splits, FIT, -ot, --tensor-split):
+
+1. **Read the model card** in `models/documentation/`. Verify dense vs MoE, expert count, active parameters.
+2. **Check actual file sizes** with `ls -lh`. Never estimate from quantization names.
+3. **Follow the decision tree** in `docs/gpu-strategy-guide.md`.
+4. **Document reasoning** in models.conf comments, including architecture source.
+
+Key principles:
+- If the model fits entirely on GPU, keep everything on GPU. `exps=CPU` is a trade-off for when VRAM is insufficient, not a MoE default.
+- Fill CUDA0 (4090, fastest) first, then CUDA1 (5070 Ti), then CPU.
+- `FIT=off` for any manual placement. FIT auto-distributes and doesn't handle expert/attention priorities.
+
+See also: `docs/lessons_learned.md` for common mistakes and prevention rules.
 
 ## Key config files
 
@@ -93,17 +112,18 @@ For non-trivial changes, follow this order:
 
 ## Agents
 
-Use agents when their role matches the task. Don't reinvent what an agent already handles.
+Use agents when their role matches the task. Don't reinvent what an agent already handles. Agent files live in `.claude/agents/`.
 
-| Agent | File | When to use |
-|-------|------|-------------|
-| `benchmark` | `.claude/agents/benchmark.md` | Running EvalPlus benchmarks, comparing model performance, analyzing results |
-| `builder` | `.claude/agents/builder.md` | Building/rebuilding Docker image, updating llama.cpp, fixing build errors |
-| `diagnose` | `.claude/agents/diagnose.md` | System status, GPU health, VRAM usage, container troubleshooting |
-| `model-manager` | `.claude/agents/model-manager.md` | Downloading, organizing, verifying models, quantization advice |
-| `api-integration` | `.claude/agents/api-integration.md` | Configuring/testing API integration, OpenAI-compatible client setup |
+| Agent | When to use |
+|-------|-------------|
+| `gpu-optimizer` | GPU placement, `-ot` regex, models.conf profiles, OOM diagnosis, layer splits |
+| `model-manager` | Download/organize/verify models, quantization advice |
+| `benchmark` | EvalPlus HumanEval+ benchmarks, performance comparison |
+| `builder` | Docker image builds, llama.cpp updates, Dockerfile changes |
+| `diagnose` | System status, GPU health, VRAM check, container troubleshooting |
+| `api-integration` | OpenAI-compatible API setup, client configuration, connectivity testing |
 
-After implementing changes that affect an agent's domain, update that agent's instructions if needed.
+After changes that affect an agent's domain, update that agent's instructions.
 
 ## Plan rules
 

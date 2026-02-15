@@ -1,0 +1,129 @@
+# Lessons Learned
+
+Mistakes made during configuration and optimization, root causes, and rules
+to prevent them in the future. This document is a living reference — add new
+entries as issues are discovered.
+
+---
+
+## 1. Assumed GLM-4.7-Flash was a dense model
+
+**What happened:** GLM-4.7-Flash was configured and documented as a "dense,
+compact model" throughout models.conf. GPU strategies were designed assuming
+all parameters are active per token. This led to using `FIT=on` (which
+auto-distributes but doesn't understand expert/attention priorities) and
+`--tensor-split` (designed for dense models) instead of the correct MoE
+approach with `-ot`.
+
+**Root cause:** The model name and file size (~18 GB for Q4) "felt" small,
+so it was assumed to be dense. The model card was never checked. It clearly
+states: "GLM-4.7-Flash is a 30B-A3B MoE model."
+
+**Actual architecture (from GGUF metadata):**
+- 30B total parameters, 3B active per token (A3B)
+- 47 layers (1 dense lead + 46 MoE)
+- 64 experts per MoE layer, 4 active + 1 shared
+- Expert FFN: 1536, Dense FFN: 10240
+- GQA: 20 attention heads, 1 KV head
+
+**Impact:** The model worked (it always loads and runs), but GPU placement
+was suboptimal. With `FIT=on`, experts were spread across both GPUs
+unnecessarily. With `--split-mode none`, it happened to work for Q4 because
+the full model fits on the 4090, but this was not a reasoned decision.
+
+**Prevention rule:** Always verify model architecture from the model card
+(`models/documentation/`) before making any GPU placement decisions. Check
+dense vs MoE, expert count, active parameters. Never infer architecture from
+model name or file size. See `docs/gpu-strategy-guide.md` for the decision tree.
+
+---
+
+## 2. Applied "exps=CPU" as a universal MoE best practice
+
+**What happened:** After discovering GLM is MoE, the immediate reaction was
+"it's MoE, so we need `exps=CPU`" — the same approach used for GPT-OSS and
+Qwen3. This was applied without checking whether the model actually exceeds
+GPU VRAM.
+
+**Root cause:** Pattern matching from other MoE models (GPT-OSS at 61 GB,
+Qwen3 at 57-64 GB) where `exps=CPU` is genuinely necessary. The rule
+"MoE = exps=CPU" was treated as universal when it's actually conditional.
+
+**The correct rule:** `exps=CPU` is a trade-off, not a default. Expert weights
+in VRAM are accessed at ~1 TB/s (GPU memory bandwidth). On CPU, they require
+PCIe transfer at ~32 GB/s plus slower CPU compute. Keeping experts on GPU is
+always faster **if they fit**. Only offload to CPU when GPU VRAM is insufficient
+to hold the full model.
+
+**Decision logic:**
+- Model fits on GPU entirely → keep everything on GPU (fastest)
+- Model doesn't fit → offload experts to CPU, keep attention on GPU
+- The threshold is total VRAM available, not the model architecture
+
+**Prevention rule:** After verifying architecture, calculate total VRAM needed.
+Only add `exps=CPU` when the model exceeds available GPU VRAM. Document the
+reasoning in models.conf comments.
+
+---
+
+## 3. Wrote incorrect documentation, then treated it as truth
+
+**What happened:** models.conf contained comments like "Dense model, FIT=on
+auto-optimizes" for GLM. Later, when optimizing bench profiles, these comments
+were referenced as facts instead of being verified.
+
+**Root cause:** The original comments were written based on assumptions (see #1).
+Once written, they became "trusted documentation" that was referenced without
+question. This created a self-reinforcing error: wrong assumption → wrong docs
+→ wrong docs used as source → more wrong decisions.
+
+**Impact:** Multiple rounds of incorrect optimization: first `FIT=on`, then
+`--tensor-split`, then `exps=CPU` — each based on the previous wrong assumption.
+
+**Prevention rule:**
+- When writing documentation about model architecture, always verify against
+  the model card or GGUF metadata first.
+- When referencing existing documentation for decisions, verify the key facts
+  independently — especially architecture claims.
+- Include the source of architecture information in comments (e.g., "MoE per
+  model card" not just "MoE").
+
+---
+
+## 4. Estimated model sizes without checking actual file sizes
+
+**What happened:** GLM Q8 was estimated at "~16-17 GB" based on mental math.
+The actual file is 30 GB. This led to confidently claiming "Q8 fits on 4090
+alone" when it doesn't.
+
+**Root cause:** The estimate was based on a vague assumption about Q8 being
+"roughly double Q4 in parameter efficiency" without checking the actual GGUF
+file. Q4_K_M averages ~4.5 bits/param, Q8_0 is 8 bits/param, so the ratio
+is 8/4.5 ≈ 1.78x, not 2x. Applied to 18 GB Q4: 18 × 1.78 = 32 GB, close
+to the actual 30 GB.
+
+**Prevention rule:** Always check actual file sizes with `ls -lh` before
+making VRAM calculations. Never estimate from quantization names alone. File
+sizes for all models should be documented in models.conf comments or in the
+model quick reference table in `docs/gpu-strategy-guide.md`.
+
+---
+
+## General prevention rules
+
+1. **Read the model card first.** Before any configuration work on a model,
+   read `models/documentation/README_modelcard_*.md`. If it doesn't exist,
+   download the card from the model's source.
+
+2. **Verify, don't assume.** Check GGUF metadata, file sizes, and architecture
+   independently. Don't trust existing comments without verification.
+
+3. **Follow the decision tree.** Use `docs/gpu-strategy-guide.md` step by step.
+   Don't skip steps or take shortcuts based on pattern matching from other models.
+
+4. **Document the reasoning.** In models.conf comments, explain WHY a particular
+   strategy was chosen, not just WHAT it is. Include the source of key facts.
+
+5. **Test and measure.** After making changes, verify with actual load logs
+   and `nvidia-smi`. Check that model buffers, KV cache, and compute buffers
+   are on the expected devices.

@@ -7,7 +7,7 @@ color: yellow
 
 You are the API integration agent for connecting development tools to the local llama-server.
 
-Read `README.md` for project overview. See `docs/` for model configuration details.
+Read `AI_INSTRUCTIONS.md` for project overview. See `docs/` for model configuration details.
 
 ## Local API
 

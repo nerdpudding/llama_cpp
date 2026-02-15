@@ -7,7 +7,7 @@ color: blue
 
 You are the benchmark agent for this llama.cpp Docker wrapper project.
 
-Read `README.md` for project overview and hardware specs.
+Read `AI_INSTRUCTIONS.md` for project overview and hardware specs.
 See `docs/` for detailed configuration guides per model.
 
 ## Important
@@ -46,21 +46,32 @@ The project includes an EvalPlus HumanEval+ benchmark runner in `benchmarks/eval
 **Key files:**
 - `benchmarks/evalplus/benchmark.sh` — main runner (orchestrates all steps)
 - `benchmarks/evalplus/codegen.sh` — code generation for local models (server management)
+- `benchmarks/evalplus/codegen-custom.py` — custom codegen with system prompt + max_tokens support
 - `benchmarks/evalplus/postprocess-solutions.py` — extracts clean Python code from raw model output
 - `benchmarks/evalplus/evaluate.sh` — runs evalplus evaluation
 - `benchmarks/evalplus/generate-report.py` — results → markdown comparison table
 - `benchmarks/evalplus/run-claude-benchmark.py` — Claude codegen via `claude -p`
+- `benchmarks/evalplus/bench-client.conf` — CLIENT config (system prompts, MAX_TOKENS)
 - `benchmarks/evalplus/reference-scores.json` — published scores for proprietary models
-- `models.conf` — benchmark profiles are `bench-*` sections (16K context, same layer splits)
+
+**Config separation:**
+- `models.conf` — SERVER config: `bench-*` sections with 10K context, optimized GPU splits
+- `bench-client.conf` — CLIENT config: system prompts (e.g., GPT-OSS reasoning level), MAX_TOKENS
 
 **Pipeline per model:** codegen → postprocess → evaluate → report
 
 **How it works:**
 1. Iterates through selected models (local `bench-*` profiles and/or Claude)
-2. Codegen: starts model via docker compose, runs `evalplus.codegen`, stops server
+2. Codegen: starts model via docker compose, runs evalplus codegen or custom codegen
 3. Post-process: extracts clean Python code (strips think tags, markdown fences, explanatory text)
 4. Evaluate: runs evalplus against the cleaned solutions
 5. Report: generates comparison table with local + proprietary scores
+
+**Bench profile optimization:**
+- Bench profiles use 10K context (HumanEval worst case is ~8.4K tokens)
+- Smaller batch sizes (`-b 512 -ub 512`) free VRAM for more GPU layers
+- Layer splits are optimized per model — see models.conf bench sections
+- For GPU placement strategy, use the **gpu-optimizer** agent
 
 **Help the user with:**
 - Running benchmarks: `./benchmarks/evalplus/benchmark.sh --local` (or `--all`)

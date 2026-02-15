@@ -7,13 +7,13 @@ color: red
 
 You are the build agent for a llama.cpp Docker project.
 
-Read `README.md` for project overview and hardware specs. See `docs/` for detailed configuration guides.
+Read `AI_INSTRUCTIONS.md` for project overview. See `docs/` for detailed configuration guides.
 
 ## Key hardware facts
 
 - GPU 0: RTX 4090 (24GB) — sm_89
 - GPU 1: RTX 5070 Ti (16GB) — sm_120
-- Host: Ubuntu 24.04, driver 580.105.08 (open kernel), CUDA 13.0
+- Host: Ubuntu 24, NVIDIA driver 580.x (open kernel), CUDA 13.0
 - The llama.cpp source is cloned in the `llama.cpp/` subdirectory
 
 ## What you do

@@ -1,11 +1,11 @@
 # Plan: Benchmark GPU Layer Optimization
 
-**Status: NOT STARTED — waiting for current benchmark test run to complete**
+**Status: IN PROGRESS — models.conf updated, OOM testing in progress**
 
 ## Goal
 
-Optimize bench profiles in `models.conf` for 16K→8K context reduction.
-Less KV cache = more VRAM = potentially more layers on GPU = faster benchmark runs.
+Optimize bench profiles in `models.conf` for reduced context (16K → 10K).
+Less KV cache = more VRAM = more layers on GPU = faster benchmark inference.
 
 ## Context from data
 
@@ -15,154 +15,137 @@ Less KV cache = more VRAM = potentially more layers on GPU = faster benchmark ru
 |-------|-------------|-------------|----------|-------|
 | GLM Q8 (incl. `<think>`) | 28,787 chars | ~7,200 | ~500 | ~7,700 |
 | GPT-OSS (no reasoning level) | 7,837 chars | ~2,000 | ~500 | ~2,500 |
+| GPT-OSS (Reasoning: high) | ~11,200 chars | ~2,800 | ~500 | ~3,300 |
 | Qwen3 UD-Q6 | 6,051 chars | ~1,500 | ~500 | ~2,000 |
 
-**Unknown:** GPT-OSS with `Reasoning: high` — could be significantly longer.
+**Worst case overall:** GLM Q8 at HumanEval/10 = ~8,391 tokens (prompt + thinking + response).
 
 **Target CTX_SIZE:** 10240 (was 16384)
 
-**Why not 8K:** GLM Q8's worst case (HumanEval/10) uses ~8,391 tokens total
-(prompt + thinking + response), which exceeds 8192. 10K gives safe margin
-for all models including future additions.
+**Why not 8K:** GLM Q8's worst case exceeds 8192. 10K gives safe margin for all
+models including future additions.
 
-## Pre-implementation: manual GPT-OSS test
+## Pre-implementation: manual GPT-OSS test — DONE
 
-Before changing anything, test GPT-OSS with `Reasoning: high` to confirm 8K is safe.
+Tested GPT-OSS with `Reasoning: high` via web UI. Both worst-case prompts stayed
+well under 10K tokens (~1,200 and ~2,800 tokens respectively). Confirmed 10K is safe.
 
-1. Start GPT-OSS via `./start.sh gpt-oss-120b`
-2. In web UI, configure to match benchmark settings:
-   - System prompt: `Reasoning: high`
-   - Temperature: `0` (greedy, same as evalplus `--greedy`)
-   - Top-P: `1` (effectively disabled)
-   - Min-P: `0`
-   - Max tokens (response): not available in GUI, leave default (will be unlimited — better for testing worst case)
-3. Test these two prompts (worst-case from existing data). Copy-paste each
-   into the web UI chat box:
+VRAM at 16K bench profile (before optimization):
+- RTX 4090: 92%
+- RTX 5070 Ti: 94%
 
-   **Test 1 — HumanEval/10** (GLM's longest response):
-   ```
-   Complete this Python function:
+## Changes made to models.conf
 
-   def is_palindrome(string: str) -> bool:
-       """ Test if given string is a palindrome """
-       return string == string[::-1]
+### Reasoning: why smaller batch sizes help
 
+HumanEval prompts are ~400 tokens max. The `-b` (batch) and `-ub` (micro-batch)
+flags control prompt processing chunk size. Larger values allocate bigger compute
+buffers in VRAM — useful for long prompts but wasteful for short ones.
 
-   def make_palindrome(string: str) -> str:
-       """ Find the shortest palindrome that begins with a supplied string.
-       Algorithm idea is simple:
-       - Find the longest postfix of supplied string that is a palindrome.
-       - Append to the end of the string reverse of a string prefix that comes before the palindromic suffix.
-       >>> make_palindrome('')
-       ''
-       >>> make_palindrome('cat')
-       'catac'
-       >>> make_palindrome('cata')
-       'catac'
-       """
-   ```
+- Production profiles use `-b 2048 -ub 2048` (Qwen3) or `-b 4096 -ub 4096` (GPT-OSS)
+  because prompts can be very long in interactive use.
+- Benchmark profiles only need `-b 512 -ub 512` since HumanEval prompts are tiny.
+  This saves several GB of compute buffer VRAM per GPU, which can be reallocated
+  to model weight layers.
 
-   **Test 2 — HumanEval/129** (GPT-OSS's own longest response):
-   ```
-   Complete this Python function:
+### Per-model changes
 
-   def minPath(grid, k):
-       """
-       Given a grid with N rows and N columns (N >= 2) and a positive integer k,
-       each cell of the grid contains a value. Every integer in the range [1, N * N]
-       inclusive appears exactly once on the cells of the grid.
+#### GLM Flash Q4 and Q8
 
-       You have to find the minimum path of length k in the grid. You can start
-       from any cell, and in each step you can move to any of the neighbor cells,
-       in other words, you can go to cells which share an edge with you current
-       cell.
-       Please note that a path of length k means visiting exactly k cells (not
-       necessarily distinct).
-       You CANNOT go off the grid.
-       A path A (of length k) is considered less than a path B (of length k) if
-       after making the ordered lists of the values on the cells that A and B go
-       through (let's call them lst_A and lst_B), lst_A is lexicographically less
-       than lst_B, in other words, there exist an integer index i (1 <= i <= k)
-       such that lst_A[i] < lst_B[i] and for any j (1 <= j < i) we have
-       lst_A[j] = lst_B[j].
-       It is guaranteed that the answer is unique.
-       Return an ordered list of the values on the cells that the minimum path go through.
+- **CTX_SIZE:** 16384 → 10240
+- **No other changes.** Both use `FIT=on`, which auto-calculates optimal layer
+  placement. GLM is a dense model that fits entirely on GPU at these sizes.
+- Q4 (~8 GB weights) easily fits on RTX 4090 alone.
+- Q8 (~16 GB weights) fits on 4090 alone with ~8 GB headroom for KV + buffers.
 
-       Examples:
+#### GPT-OSS 120B (MoE, 36 layers)
 
-           Input: grid = [ [1,2,3], [4,5,6], [7,8,9]], k = 3
-           Output: [1, 2, 1]
+- **CTX_SIZE:** 16384 → 10240
+- **Batch size:** `-b 4096 -ub 4096` → `-b 512 -ub 512`
+- **Layer split:** 12 CUDA0 + 4 CUDA1 → 12 CUDA0 + 5 CUDA1 (+1 layer on CUDA1)
 
-           Input: grid = [ [5,9,3], [4,1,6], [7,8,2]], k = 1
-           Output: [1]
-       """
-   ```
+**Reasoning:**
+- Production at 64K: compute buffer on 5070 Ti is ~3.2 GB with `-ub 4096`.
+- At 10K with `-ub 512`: compute buffer drops ~2.5 GB (to ~0.7 GB).
+- Each GPT-OSS layer is ~1.7 GB. The freed ~2.5 GB is enough for 1 extra layer.
+- CUDA0 stays at 12 layers (4090 was already at 96% in production, limited headroom).
+- CUDA1 gains 1 layer: regex changes from `1[2-5]` (4 layers) to `1[2-6]` (5 layers).
+- Total on GPU: 17/36 (was 16/36).
 
-4. Note the response lengths (tokens shown in web UI). If both stay under
-   ~7,500 tokens, 8K is safe.
+#### Qwen3-Coder-Next UD-Q5_K_XL (MoE, 48 layers)
 
-## Implementation steps
+- **CTX_SIZE:** 16384 → 10240
+- **Batch size:** `-b 2048 -ub 2048` → `-b 512 -ub 512`
+- **Layer split:** 15 CUDA0 + 7 CUDA1 → 18 CUDA0 + 8 CUDA1 (+4 layers total)
 
-### 1. Add bench profiles to start.sh model picker
+**Reasoning:**
+- Qwen3 has DeltaNet on 75% of layers — only 12/48 layers have KV cache.
+- At 256K production: KV = ~3,264 MiB. At 10K: ~128 MiB. Saves ~3,136 MiB.
+- Combined with `-ub 512` (saves compute buffer), total ~4-5 GB freed per GPU.
+- Each Qwen3 Q5 layer is ~1.2 GB.
+- CUDA0: 15 → 18 layers (+3). Regex: `[0-9]|1[0-4]` → `[0-9]|1[0-7]`.
+- CUDA1: 7 → 8 layers (+1). Regex: `1[5-9]|2[0-1]` → `1[8-9]|2[0-5]`.
+- Total on GPU: 26/48 (was 22/48).
+
+#### Qwen3-Coder-Next UD-Q6_K_XL and Q6_K (MoE, 48 layers)
+
+- **CTX_SIZE:** 16384 → 10240
+- **Batch size:** `-b 2048 -ub 2048` → `-b 512 -ub 512`
+- **Layer split:** 13 CUDA0 + 6 CUDA1 → 16 CUDA0 + 7 CUDA1 (+4 layers total)
+
+**Reasoning:**
+- Same DeltaNet KV savings as Q5 variant.
+- Each Qwen3 Q6 layer is ~1.3 GB (slightly larger than Q5).
+- CUDA0: 13 → 16 layers (+3). Regex: `[0-9]|1[0-2]` → `[0-9]|1[0-5]`.
+- CUDA1: 6 → 7 layers (+1). Regex: `1[3-8]` → `1[6-9]|2[0-2]`.
+- Total on GPU: 23/48 (was 19/48).
+- Both UD-Q6_K_XL and standard Q6_K use the same split (similar model sizes).
+
+### Summary table
+
+| Model | Production layers | Bench layers (old) | Bench layers (new) | Change |
+|-------|------------------|-------------------|-------------------|--------|
+| GLM Q4/Q8 | all (FIT=on) | all (FIT=on) | all (FIT=on) | — |
+| GPT-OSS 120B | 16/36 | 16/36 | 17/36 | +1 |
+| Qwen3 Q5 | 22/48 | 22/48 | 26/48 | +4 |
+| Qwen3 Q6/Q6K | 19/48 | 19/48 | 23/48 | +4 |
+
+### No sampler args in bench profiles
+
+Benchmark profiles intentionally omit temperature/top-p/min-p sampler arguments.
+evalplus sends `temperature=0` via API (greedy decoding), which overrides any
+server-side defaults. Adding redundant sampler args would just add noise.
+
+## Remaining steps
+
+### 1. OOM testing — IN PROGRESS
+
+Test each optimized bench profile via `./start.sh`:
+- [ ] `bench-glm-flash-q4` — start, generate response, check nvidia-smi
+- [ ] `bench-glm-flash-q8` — start, generate response, check nvidia-smi
+- [ ] `bench-gpt-oss-120b` — start, generate response, check nvidia-smi
+- [ ] `bench-qwen3-coder-ud-q5` — start, generate response, check nvidia-smi
+- [ ] `bench-qwen3-coder-ud-q6` — start, generate response, check nvidia-smi
+- [ ] `bench-qwen3-coder-q6k` — start, generate response, check nvidia-smi
+
+**If any profile OOMs:** reduce the CUDA1 layer range by 1 and retest.
+
+### 2. Add bench profiles to start.sh model picker
 
 Add a separate "Benchmark profiles" section in the start.sh menu so bench configs
-can be selected for manual testing (OOM checks, response length checks).
+can be selected for manual testing. (May already be working if start.sh reads all
+sections from models.conf.)
 
-### 2. Reduce CTX_SIZE for all bench profiles
+### 3. Full benchmark run with optimized profiles
 
-Change all bench profiles from `CTX_SIZE=16384` to `CTX_SIZE=10240`.
-
-### 3. Calculate VRAM freed per model
-
-**KV cache savings (16K → 10K):**
-
-- **GLM Flash:** Standard attention on all layers. KV cache scales linearly.
-  At q8_0: 16K uses ~X MiB, 8K uses ~X/2 MiB. Need to measure.
-- **GPT-OSS 120B:** Half SWA layers (18/36) have fixed tiny KV regardless of
-  context. Only non-SWA layers benefit. Savings are smaller than GLM.
-  At 64K production: KV = 1,224 MiB non-SWA + 81 MiB SWA.
-  At 8K: non-SWA scales down ~8x → significant saving.
-- **Qwen3-Coder-Next:** Only 12/48 layers have KV cache (DeltaNet).
-  At 256K production (q8_0): 3,264 MiB total KV.
-  At 8K: ~102 MiB. Saves ~3,162 MiB. Plus smaller compute buffers.
-
-### 4. Try fitting models entirely on RTX 4090
-
-With 10K context, some models might fit entirely on the 4090 (24 GB):
-
-- **GLM Flash Q4 (~8 GB weights):** Almost certainly fits on 4090 alone.
-  Already uses FIT=on. Might not even need 5070 Ti at all.
-- **GLM Flash Q8 (~16 GB weights):** Possible with 10K context.
-  24 GB - 16 GB weights = 8 GB for KV cache + compute buffers.
-- **GPT-OSS 120B (~61 GB weights):** No chance on single GPU. But freed VRAM
-  could allow more layers on GPU → faster.
-- **Qwen3 UD-Q5 (~57 GB) / UD-Q6 (~64 GB) / Q6K (~66 GB):** No chance on
-  single GPU. But with tiny KV at 10K, significantly more layers on GPU.
-
-### 5. Optimize layer splits for MoE models
-
-For GPT-OSS and Qwen3 (can't fit on single GPU):
-- Calculate new VRAM budget with 8K context
-- Try adding more layers to CUDA0 and/or CUDA1
-- Update `-ot` regex patterns in models.conf
-
-### 6. Test each model for OOM
-
-Use start.sh (with bench profiles in menu) to start each model and verify:
-- No OOM on startup
-- Generate a response successfully
-- Check VRAM usage with `nvidia-smi`
-
-### 7. Update models.conf bench profiles
-
-After successful tests, update the profiles with optimized settings.
+After all OOM tests pass, run the full benchmark suite with the new profiles
+and compare inference speed (t/s) against previous runs.
 
 ## Order of execution
 
-1. Manual GPT-OSS test (user) → confirm 8K is safe
-2. Add bench profiles to start.sh menu
-3. Change CTX_SIZE to 8192 for all bench profiles
-4. Test GLM Q4 and Q8 on 4090-only (remove -ot, just FIT=on)
-5. Calculate and test new layer splits for GPT-OSS and Qwen3
-6. Update models.conf with final optimized profiles
-7. Run full benchmark with new profiles
+1. ~~Manual GPT-OSS test → confirm 10K is safe~~ — DONE
+2. ~~Update models.conf bench profiles~~ — DONE
+3. OOM test per model via start.sh — IN PROGRESS
+4. Add bench profiles to start.sh menu (if not already working)
+5. Full benchmark run with optimized profiles
+6. Compare speeds and update documentation
