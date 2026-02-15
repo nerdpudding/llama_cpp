@@ -155,7 +155,6 @@ Profiles are defined in `models.conf` with a `bench-` prefix. They use the same 
 | `bench-gpt-oss-120b` | GPT-OSS 120B F16 | Large MoE, partial CPU offload |
 | `bench-qwen3-coder-ud-q5` | Qwen3-Coder-Next UD-Q5_K_XL | Speed option |
 | `bench-qwen3-coder-ud-q6` | Qwen3-Coder-Next UD-Q6_K_XL | Coding baseline |
-| `bench-qwen3-coder-q6k` | Qwen3-Coder-Next Q6_K | Standard quant |
 | `bench-opus4.6-thinking` | Claude Opus 4.6 | Extended thinking (via Claude Code) |
 | `bench-opus4.6` | Claude Opus 4.6 | Without thinking (via Claude Code) |
 

@@ -24,7 +24,6 @@ DISPLAY_NAMES = {
     "bench-gpt-oss-120b": "GPT-OSS 120B F16",
     "bench-qwen3-coder-ud-q5": "Qwen3-Coder-Next UD-Q5_K_XL",
     "bench-qwen3-coder-ud-q6": "Qwen3-Coder-Next UD-Q6_K_XL",
-    "bench-qwen3-coder-q6k": "Qwen3-Coder-Next Q6_K",
     "bench-opus4.6-thinking": "Claude Opus 4.6 (thinking)",
     "bench-opus4.6": "Claude Opus 4.6",
 }
@@ -33,7 +32,6 @@ DISPLAY_NAMES = {
 REFERENCE_MAP = {
     "bench-qwen3-coder-ud-q5": "Qwen3-Coder-Next (FP16, official)",
     "bench-qwen3-coder-ud-q6": "Qwen3-Coder-Next (FP16, official)",
-    "bench-qwen3-coder-q6k": "Qwen3-Coder-Next (FP16, official)",
     "bench-gpt-oss-120b": "GPT-OSS 120B (official)",
     "bench-glm-flash-q4": "GLM-4.7 (full, not Flash)",
     "bench-glm-flash-q8": "GLM-4.7 (full, not Flash)",

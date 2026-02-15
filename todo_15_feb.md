@@ -50,10 +50,10 @@ Zie `claude_plans/PLAN_bench_gpu_optimization.md`
 |---------|----------|-------|--------|
 | `bench-glm-flash-q4` | A (4090 only) | 47/47 GPU | OK — ~140 t/s |
 | `bench-glm-flash-q8` | C (beide GPUs) | 35+12=47/47 | OK — ~105 t/s (37+10 getest: trager, 53 splits) |
-| `bench-gpt-oss-120b` | D (GPU+CPU) | 13+5=18/36 | ONGETEST (was 12+5) |
-| `bench-qwen3-coder-ud-q5` | D (GPU+CPU) | 18+8=26/48 | ONGETEST |
-| `bench-qwen3-coder-ud-q6` | D (GPU+CPU) | 16+7=23/48 | ONGETEST |
-| `bench-qwen3-coder-q6k` | D (GPU+CPU) | 16+7=23/48 | ONGETEST |
+| `bench-gpt-oss-120b` | D (GPU+CPU) | 13+5=18/36 | OK — ~22 t/s (13+6 OOM op CUDA1) |
+| `bench-qwen3-coder-ud-q5` | D (GPU+CPU) | 19+9=28/48 | OK — ~30 t/s (was 18+8 ~29 t/s) |
+| `bench-qwen3-coder-ud-q6` | D (GPU+CPU) | 16+8=24/48 | OK — ~24 t/s (17+8 OOM, CUDA1 96%) |
+| `bench-qwen3-coder-q6k` | — | — | VERWIJDERD (UD varianten volstaan) |
 
 ### Productie profiles
 
@@ -64,4 +64,4 @@ Zie `claude_plans/PLAN_bench_gpu_optimization.md`
 | `gpt-oss-120b` | D (GPU+CPU) | 12+4=16/36 | Werkt, niet gereviewd |
 | `qwen3-coder` | D (GPU+CPU) | 13+6=19/48 | Werkt, niet gereviewd |
 | `qwen3-coder-q5` | D (GPU+CPU) | 15+7=22/48 | Werkt, niet gereviewd |
-| `qwen3-coder-q6k` | D (GPU+CPU) | 13+6=19/48 | Werkt, niet gereviewd |
+| `qwen3-coder-q6k` | — | — | VERWIJDERD (UD varianten volstaan) |
