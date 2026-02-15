@@ -1,6 +1,6 @@
 # EvalPlus HumanEval+ Benchmark Results
 
-*Generated: 2026-02-15 08:11*
+*Generated: 2026-02-15 09:12*
 
 ## Local Results (pass@1, greedy decoding, temperature=0)
 
@@ -11,7 +11,7 @@
 | 3 | Qwen3-Coder-Next UD-Q5_K_XL | 93.3% | 90.2% | -0.8pp |
 | 4 | GPT-OSS 120B F16 | 92.1% | 87.8% | +3.8pp |
 | 5 | GLM-4.7 Flash Q4_K_M * | 87.8% | 84.8% | +0.8pp |
-| 6 | GLM-4.7 Flash Q8_0 * | 85.4% | 82.9% | -1.6pp |
+| 6 | GLM-4.7 Flash Q8_0 * | 87.2% | 82.9% | +0.2pp |
 
 ## HumanEval Ranking (pass@1)
 
@@ -29,9 +29,9 @@
 | 10 | GPT-4o | 90.2% | EvalPlus leaderboard + index.dev |
 | 11 | GPT-OSS 120B (official) | 88.3% | Model card |
 | 12 | **GLM-4.7 Flash Q4_K_M** | **87.8%** | **Local benchmark** |
-| 13 | GLM-4.7 (full, not Flash) | 87.0% | zoer.ai |
-| 14 | Codestral 25.01 | 86.6% | Mistral AI / index.dev |
-| 15 | **GLM-4.7 Flash Q8_0** | **85.4%** | **Local benchmark** |
+| 13 | **GLM-4.7 Flash Q8_0** | **87.2%** | **Local benchmark** |
+| 14 | GLM-4.7 (full, not Flash) | 87.0% | zoer.ai |
+| 15 | Codestral 25.01 | 86.6% | Mistral AI / index.dev |
 | 16 | Gemini 1.5 Pro | 84.1% | index.dev |
 | 17 | Llama 3.1 405B | 82.0% | index.dev |
 

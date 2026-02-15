@@ -45,6 +45,16 @@ cd /home/rvanpolen/vibe_claude_kilo_cli_exp/llama_cpp
 claude --agent humaneval-solver-thinking     # With extended thinking
 # or:
 claude --agent humaneval-solver              # Without extended thinking
+#
+# On first run you may be asked about thinking effort:
+#   - For thinking variant: choose "high" (default)
+#   - For non-thinking variant: choose "low"
+#   (on subsequent runs it remembers your choice — change with Alt+T or /model)
+#
+# If Claude starts in plan mode (shows "plan mode on" at the bottom):
+#   - Press Shift+Tab to cycle to normal mode (Default → Accept Edits → Plan → ...)
+#   - The agent needs normal mode to write files
+#
 # Then type "start" — the agent reads the prompts, solves all 164 problems,
 # and writes the solutions to results/bench-opus4.6-thinking/ (or bench-opus4.6/)
 
