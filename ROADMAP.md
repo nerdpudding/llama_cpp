@@ -21,7 +21,7 @@ MoE models use optimized `-ot` regex configurations for per-layer GPU/CPU tensor
 - 6 benchmark profiles in `models.conf` (bench-*) with reduced 16K context
 - Code generation on host, evaluation in Docker sandbox (`ganler/evalplus`) for safety
 - Comparison report with published scores for proprietary models (Claude, GPT, DeepSeek, Codestral, etc.)
-- Claude Opus 4.6 benchmark via custom Claude Code agent (Max subscription) — solves problems from prompts only, no code execution or internet. Agents in `.claude/agents/humaneval-solver*.md`, evaluation via `benchmarks/evalplus/evaluate-claude.sh`
+- Claude Opus 4.6 benchmark via custom Claude Code agent (Max subscription) — solves problems from prompts only, no code execution or internet. Agents in `.claude/agents/humaneval-solver*.md`, run via `benchmarks/evalplus/benchmark.sh`
 - Production sampler settings updated per official model card recommendations
 - See `benchmarks/evalplus/README.md` for setup and usage
 

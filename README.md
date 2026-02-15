@@ -79,7 +79,7 @@ Ollama doesn't support the features needed for this hardware and these models:
 │       └── UD-Q6_K_XL/
 ├── benchmarks/
 │   └── evalplus/                  # EvalPlus HumanEval+ coding benchmark runner
-│       ├── run-benchmark.sh       # Orchestrator script
+│       ├── benchmark.sh           # Main runner (orchestrates all steps)
 │       ├── generate-report.py     # Results → comparison table
 │       ├── reference-scores.json  # Published proprietary model scores
 │       └── results/               # Benchmark outputs (gitignored)
@@ -182,8 +182,9 @@ The project includes an [EvalPlus HumanEval+](benchmarks/evalplus/README.md) cod
 ```bash
 cd benchmarks/evalplus
 source .venv/bin/activate       # One-time setup: uv venv && uv pip install evalplus
-./run-benchmark.sh bench-glm-flash-q4   # Smoke test (one model, ~30-60 min)
-./run-benchmark.sh                       # Full run (all 6 models, ~6 hours)
+./benchmark.sh bench-glm-flash-q4       # Smoke test (one model)
+./benchmark.sh --local                  # All local models
+./benchmark.sh --all                    # All models (local + Claude)
 ```
 
 Code generation runs on the host via the llama.cpp API; evaluation runs in a Docker sandbox for safety. Claude Opus 4.6 can also be benchmarked using a custom Claude Code agent that solves each problem without code execution or internet access. See [benchmarks/evalplus/README.md](benchmarks/evalplus/README.md) for full setup and usage.
