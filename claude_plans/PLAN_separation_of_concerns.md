@@ -1,5 +1,23 @@
 # Plan: Separation of concerns — server config vs client config
 
+**Status: IMPLEMENTED — awaiting full test run**
+
+## Afgerond
+
+- [x] `bench-client.conf` aangemaakt met `[defaults]` (MAX_TOKENS) en `[bench-gpt-oss-120b]` (SYSTEM_PROMPT)
+- [x] `codegen-custom.py` geschreven (lokale API met system prompt + configurable max_tokens)
+- [x] `codegen.sh` aangepast (kiest evalplus vs custom codegen op basis van system prompt)
+- [x] `benchmark.sh` aangepast (parsed bench-client.conf, patcht evalplus max_tokens automatisch)
+- [x] `models.conf` header en comments bijgewerkt ("dit is server config")
+- [x] Beide READMEs bijgewerkt met server vs client config documentatie
+- [x] `--reasoning-format none` gedocumenteerd in models.conf en evalplus README
+
+## Nog te doen
+
+- [ ] Testen dat GPT-OSS daadwerkelijk `codegen-custom.py` pad neemt met system prompt
+- [ ] Testen dat evalplus max_tokens patch correct wordt toegepast
+- [ ] Na succesvolle test: archiveer dit plan naar `archive/`
+
 ## Context
 
 models.conf bevat server-configuratie: welk model laden, hoeveel GPU layers, context size, extra server flags. Dit wordt via `.env` → `docker-compose.yml` naar `llama-server` gestuurd.

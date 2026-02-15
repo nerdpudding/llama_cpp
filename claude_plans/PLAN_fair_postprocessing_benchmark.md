@@ -1,14 +1,22 @@
 # Plan: Fair post-processing for all benchmark models
 
-## Status
+**Status: IMPLEMENTED — awaiting full test run**
 
-### Afgerond
+## Afgerond
 
-- [x] `postprocess-solutions.py` aangemaakt en getest
-- [x] Postprocessor geintegreerd in `run-benchmark.sh` en `evaluate-claude.sh`
+- [x] `postprocess-solutions.py` aangemaakt en getest op bestaande data
+- [x] Pipeline herstructurering: `benchmark.sh` → `codegen.sh` → `postprocess-solutions.py` → `evaluate.sh`
+- [x] Oude scripts verwijderd (`run-benchmark.sh`, `evaluate-claude.sh`)
 - [x] System prompt verbeterd in `run-claude-benchmark.py`
-- [x] `bench-glm-flash` hernoemd naar `bench-glm-flash-q8` (models.conf, generate-report.py, results dir)
+- [x] `bench-glm-flash` hernoemd naar `bench-glm-flash-q8`
+- [x] Overwrite/skip/quit prompt (nu delete/skip/quit)
 - [x] README.md bijgewerkt
+
+## Nog te doen
+
+- [ ] Volledige clean run met alle modellen (smoke test GLM Q4 loopt nu)
+- [ ] Verifiëren dat postprocessor + evaluate + report correct werken in nieuwe pipeline
+- [ ] Na succesvolle test: archiveer dit plan naar `archive/`
 
 ### Testresultaten postprocessor
 

@@ -1,5 +1,7 @@
 # Plan: Benchmark GPU Layer Optimization
 
+**Status: NOT STARTED — waiting for current benchmark test run to complete**
+
 ## Goal
 
 Optimize bench profiles in `models.conf` for 16K→8K context reduction.

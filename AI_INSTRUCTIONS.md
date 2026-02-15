@@ -12,6 +12,7 @@ Custom llama.cpp Docker build for a dual-GPU desktop (RTX 4090 24GB + RTX 5070 T
 - **Modularity** — keep server config, client config, and scripts cleanly separated.
 - **Keep everything up to date** — after any change, verify that READMEs, docs, agent instructions, and config files still reflect reality. Stale docs are worse than no docs.
 - **Use agents when their role fits** — don't do manually what an agent is designed for. Check the agents table below before starting a task.
+- **ALL code, docs, comments, plans, and commit messages MUST be in English** — always, no exceptions. The user often communicates in Dutch, but everything written to files must be English.
 
 ## Workflow
 
