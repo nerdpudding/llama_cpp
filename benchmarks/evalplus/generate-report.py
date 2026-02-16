@@ -156,7 +156,7 @@ def generate_report(results_dir: str, reference_file: str) -> str:
     # --- Local results table ---
     lines.append("## Local Results (pass@1, greedy decoding, temperature=0)")
     lines.append("")
-    lines.append("| # | Model | HumanEval | HumanEval+ | vs FP16 ref |")
+    lines.append("| # | Model | HumanEval | HumanEval+ | vs published |")
     lines.append("|---|-------|-----------|------------|-------------|")
 
     for rank, (model_id, scores) in enumerate(sorted_local, 1):
@@ -236,7 +236,7 @@ def generate_report(results_dir: str, reference_file: str) -> str:
     lines.append("- All local results use greedy decoding (temperature=0, max_tokens=4096)")
     lines.append("- **HumanEval+** uses 80x more tests than standard HumanEval (stricter, scores are typically 3-8% lower)")
     lines.append("- Local benchmarks produce both HumanEval and HumanEval+ scores")
-    lines.append("- \"vs FP16 ref\" shows difference in HumanEval base score vs the closest official published score")
+    lines.append("- \"vs published\" shows difference in HumanEval base score vs the closest official published score")
     lines.append("- Many reference models only have HumanEval (not HumanEval+) published — direct comparison on HumanEval+ is limited")
     lines.append("- Local scores may differ from published due to quantization, prompt template, and max_tokens differences")
     lines.append("- GLM-4.7 Flash is a reasoning model — benchmarked with `--reasoning-format none` to include thinking in output. Scores may be less reliable: the model spends tokens on chain-of-thought reasoning before producing code, and the code extractor must parse it from mixed reasoning+code output. The Q4 > Q8 score inversion is likely caused by this")
@@ -244,7 +244,7 @@ def generate_report(results_dir: str, reference_file: str) -> str:
     # Add Claude note if any opus results exist
     has_opus = any("opus" in mid for mid in local_scores)
     if has_opus:
-        lines.append("- Claude Opus 4.6 was tested via Claude Code (Max subscription) using a custom agent that solves each problem from the prompt alone — no code execution, no internet, no tools. \"vs FP16 ref\" compares against the published Opus 4.5 score (no Opus 4.6 reference available yet)")
+        lines.append("- Claude Opus 4.6 was tested via Claude Code (Max subscription) using a custom agent that solves each problem from the prompt alone — no code execution, no internet, no tools. \"vs published\" compares against the published Opus 4.5 score (no Opus 4.6 reference available yet)")
     lines.append("")
 
     return "\n".join(lines)

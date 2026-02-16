@@ -18,12 +18,12 @@
     "Claude 3.5 Sonnet": {
       "humaneval": 92.0,
       "humaneval_plus": 81.7,
-      "source": "EvalPlus leaderboard + index.dev"
+      "source": "EvalPlus leaderboard"
     },
     "GPT-4o": {
       "humaneval": 90.2,
       "humaneval_plus": 87.2,
-      "source": "EvalPlus leaderboard + index.dev"
+      "source": "EvalPlus leaderboard"
     },
     "OpenAI O1 Preview": {
       "humaneval": 96.3,
@@ -43,7 +43,7 @@
     "Codestral 25.01": {
       "humaneval": 86.6,
       "humaneval_plus": null,
-      "source": "Mistral AI / index.dev"
+      "source": "Mistral AI"
     },
     "GLM-4.7 (full, not Flash)": {
       "humaneval": 87.0,
@@ -53,12 +53,12 @@
     "Gemini 1.5 Pro": {
       "humaneval": 84.1,
       "humaneval_plus": null,
-      "source": "index.dev"
+      "source": "Gemini 1.5 technical report (arxiv:2403.05530)"
     },
     "Llama 3.1 405B": {
-      "humaneval": 82.0,
+      "humaneval": 89.0,
       "humaneval_plus": null,
-      "source": "index.dev"
+      "source": "Meta official eval (0-shot, pass@1)"
     },
     "Qwen3-Coder-Next (FP16, official)": {
       "humaneval": 94.1,
