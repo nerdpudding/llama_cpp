@@ -43,7 +43,7 @@ For non-trivial changes, follow this order:
 │   ├── gpu-strategy-guide.md           # ** GPU placement decision tree — read before configuring models **
 │   ├── client-settings.md              # ** Recommended client-side sampler settings per model **
 │   ├── bench-test-results.md           # Bench profile GPU optimization results (VRAM, speeds, OOM tests)
-│   ├── dgx-spark-comparison.md         # DGX Spark vs desktop comparison (WIP article)
+│   ├── dgx-spark-comparison.md         # DGX Spark vs desktop comparison (draft article)
 │   └── lessons_learned.md              # Mistakes made and prevention rules
 ├── models/                           # GGUF model files (gitignored)
 │   ├── documentation/                # Model cards from HuggingFace

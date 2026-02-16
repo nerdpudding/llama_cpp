@@ -27,28 +27,35 @@ All models are MoE. GPU placement uses optimized `-ot` regex configurations for 
 ### Bench profile GPU optimization
 - All bench profiles optimized: reduced context (16K→10K), smaller batch sizes (-b 512 -ub 512), more GPU layers
 - OOM tested all profiles, documented results in `docs/bench-test-results.md`
-- Plan: `claude_plans/PLAN_bench_gpu_optimization.md`
 
 ### Production profile optimization (2026-02-16)
 - All production profiles optimized with explicit GPU layer placement and `-b 2048 -ub 512`
 - Key discovery: `-ub` (micro-batch) determines compute buffer VRAM — switching to `-ub 512` freed 449-2000 MiB per GPU
-- GLM Q4: Strategy A (single GPU), 142.66 t/s
-- GLM Q8: Strategy C (33+14=47/47), 103.79 t/s
-- GPT-OSS 120B: Strategy D (11+4=15/36), 20.72 t/s
-- Qwen3 UD-Q5: Strategy D (17+8=25/48), 27.89 t/s (+8% from 25.8)
+- GLM Q4: Strategy A (single GPU), ~142.7 t/s
+- GLM Q8: Strategy C (33+14=47/47), ~103.8 t/s
+- GPT-OSS 120B: Strategy D (11+4=15/36), ~20.7 t/s
+- Qwen3 UD-Q5: Strategy D (17+8=25/48), ~27.9 t/s (+8% from 25.8)
 - Documented in `docs/gpu-strategy-guide.md` and `docs/lessons_learned.md`
-- Plan: `claude_plans/PLAN_bench_gpu_optimization.md`
+
+### Documentation consolidation and model selection (2026-02-16)
+- Consolidated project hierarchy, archived outdated docs, organized `docs/`
+- Added `docs/client-settings.md` — sampler settings per model with official sources
+- Added doc-keeper agent for documentation consistency audits
+- Removed UD-Q6 (UD-Q5 is faster and higher scoring on all metrics)
+- Rewrote `start.sh` menu with descriptions, speeds, and bench submenu
+- Added capability and sampler quick-reference tables to client-settings.md
+- GPT-OSS reasoning levels (low/medium/high) documented with trade-offs
+
+### DGX Spark comparison article (concept)
+- Researched DGX Spark vs desktop for GPT-OSS 120B inference
+- Draft article in `docs/dgx-spark-comparison.md`, data archived in `archive/dgx-spark-benchmarks.md`
 
 ## Next Up
 
-### Temperature/sampling parameter sweeps
-- Test temperature 0.6 / 0.8 / 1.0 for agentic coding tasks
-- Find the optimal sampling configuration for deterministic code generation vs. creative tasks
-- Document impact on self-correction behavior
-
-### VRAM optimization experiments
-- Test different KV cache types (q5_0 as middle ground between q8_0 and q4_0)
-- Test `--no-op-offload` for potential token generation speed improvement
+### Streamlined model onboarding
+- Repeatable workflow for evaluating and adding new GGUF models using specialized agents
+- Five candidate models already have model cards in `models/documentation/CANDIDATES/`
+- Plan: `claude_plans/PLAN_add_model_flow.md`
 
 ## Future
 
@@ -68,9 +75,7 @@ All models are MoE. GPU placement uses optimized `-ot` regex configurations for 
 - Benchmark impact of `-t` thread count on CPU expert processing
 
 ### Extended benchmarks
-- Add MBPP+ (378 problems) to the existing EvalPlus benchmark runner
-- LiveCodeBench support (pending upstream OpenAI API integration)
-- Automated VRAM utilization tracking during benchmarks
+- Evaluate which additional benchmarks are useful beyond HumanEval+
 - Regression testing when updating llama.cpp
 
 ## Candidate Models
@@ -83,7 +88,3 @@ Five models are being evaluated for potential addition to the project. Model car
 - **Ministral-3-14B-Instruct** — 14B (13.5B LM + 0.4B vision encoder), general-purpose instruct with vision, multilingual, edge-optimized
 - **Ministral-3-14B-Reasoning** — Same architecture as 14B Instruct but post-trained for reasoning with `<think>` blocks, strong at math/STEM (AIME25 85.0%)
 
-## Considered & Deferred
-
-### DGX Spark
-Evaluated for GPT-OSS 120B: ~2x speed improvement (38-41 t/s vs ~20 t/s) driven by 273 GB/s unified memory bandwidth. Not justified at $3,000-4,000 given the desktop's adequate performance for interactive use. See `archive/dgx-spark-benchmarks.md` for detailed comparison.

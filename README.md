@@ -68,7 +68,7 @@ Ollama doesn't support the features needed for this hardware and these models:
 │   ├── gpu-strategy-guide.md              # GPU placement decision tree
 │   ├── client-settings.md                 # Recommended client-side sampler settings per model
 │   ├── bench-test-results.md              # Bench profile GPU optimization (VRAM, speeds, OOM tests)
-│   ├── dgx-spark-comparison.md            # DGX Spark vs desktop comparison (WIP article)
+│   ├── dgx-spark-comparison.md            # DGX Spark vs desktop comparison (draft article)
 │   └── lessons_learned.md                 # Mistakes and prevention rules
 ├── models/                        # GGUF files (gitignored)
 │   ├── .gitkeep
