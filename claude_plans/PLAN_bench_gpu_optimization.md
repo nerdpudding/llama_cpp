@@ -1,6 +1,6 @@
 # Plan: Benchmark GPU Layer Optimization
 
-**Status: BENCH PROFILES COMPLETE — production profile optimization remaining**
+**Status: COMPLETE — all bench and production profiles optimized (2026-02-16)**
 
 ## Goal
 
@@ -149,45 +149,33 @@ configurations benchmarked.
 5. ~~Full benchmark run with optimized profiles~~ — DONE (see REPORT.md)
 6. ~~Compare speeds and update documentation~~ — DONE
 
-## Remaining: Production profile optimization
+## Production profile optimization — COMPLETE (2026-02-16)
 
-Bench profiles are fully optimized and benchmarked. Production profiles still
-need review and optimization for the following models:
+All production profiles optimized using aggressive GPU layer placement with
+`-b 2048 -ub 512` (universal optimal setting). Key discovery: `-ub` (micro-batch)
+determines compute buffer VRAM, not `-b` (logical batch). Switching from
+`-ub 1024`/`-ub 2048` to `-ub 512` saved 449-2000 MiB per GPU, enabling more
+model layers on GPU across all profiles.
 
-- [ ] GLM-4.7 Flash Q4_K_M — FIT=on, 128K context, review if explicit -ot is better
-- [ ] GLM-4.7 Flash Q8_0 — FIT=on, 128K context, review layer split, may benefit from explicit -ot
-- [ ] GLM-4.7 Flash Q8_0 (experimental) — FIT=on, 128K context, same as Q8 but different model file
-- [ ] Qwen3-Coder-Next UD-Q5_K_XL — 15+7=22/48, 256K context, -b 2048 -ub 2048
+**Dropped:** Qwen3 UD-Q6_K_XL and Q6_K — Q5 is faster AND scores higher.
 
-**Dropped:** Qwen3-Coder-Next UD-Q6_K_XL and Q6_K (non-UD) removed from
-production optimization. Benchmark results show UD-Q5 is both faster (25.8 vs
-21.4 t/s) and scores higher (93.9% vs 92.1% HumanEval, 90.9% vs 89.0%
-HumanEval+). No reason to optimize profiles for models that are strictly
-inferior on every metric. UD-Q6 profiles remain in models.conf for reference
-but are not a priority.
+### Final optimized production profiles
 
-**Exception:** GPT-OSS 120B production profile is already optimized (11+3=14/36,
-128K context, -b 2048 -ub 2048). No changes needed.
+| Model | Strategy | GPU layers | Batch | Speed | Date |
+|-------|----------|-----------|-------|-------|------|
+| GLM Q4_K_M | A (single GPU) | 47/47 CUDA0 | default | 142.66 t/s | 2026-02-16 |
+| GLM Q8_0 | C (dual GPU) | 33 CUDA0 + 14 CUDA1 = 47/47 | -b 2048 -ub 512 | 103.79 t/s | 2026-02-16 |
+| GLM Q8_0 exp | C (dual GPU) | 33 CUDA0 + 14 CUDA1 = 47/47 | -b 2048 -ub 512 | same as Q8 | 2026-02-16 |
+| GPT-OSS 120B | D (GPU+CPU) | 11 CUDA0 + 4 CUDA1 = 15/36 | -b 2048 -ub 512 | 20.72 t/s | 2026-02-16 |
+| Qwen3 UD-Q5 | D (GPU+CPU) | 17 CUDA0 + 8 CUDA1 = 25/48 | -b 2048 -ub 512 | 27.89 t/s | 2026-02-16 |
 
-### Current production profiles (from models.conf)
+### Optimization workflow — completed
 
-| Model | CTX_SIZE | Batch | GPU layers | FIT | Strategy |
-|-------|----------|-------|-----------|-----|----------|
-| GLM Q4_K_M | 131072 | default | 99 (all) | on | auto-distribute |
-| GLM Q8_0 | 131072 | default | 99 (all) | on | auto-distribute |
-| GLM Q8_0 exp | 131072 | default | 99 (all) | on | auto-distribute |
-| GPT-OSS 120B | 131072 | -b 2048 -ub 2048 | 99 | off | 11 CUDA0 + 3 CUDA1 + CPU |
-| Qwen3 UD-Q5 | 262144 | -b 2048 -ub 2048 | 99 | off | 15 CUDA0 + 7 CUDA1 + CPU |
+1. [x] gpu-optimizer agent created `advice_test_plan.md` with aggressive/moderate suggestions
+2. [x] Aggressive profiles tested (GLM Q4: pass, GLM Q8: OOM with -ub 1024, revised with -ub 512: pass)
+3. [x] All profiles finalized with -ub 512 — no moderate round needed
+4. [x] models.conf updated with final profiles and measured data in comments
+5. [x] Documentation updated: gpu-strategy-guide.md, lessons_learned.md
+6. [x] doc-keeper verification and commit
 
-### Optimization workflow
-
-1. **gpu-optimizer agent** analyzes current profiles vs bench profiles, considers
-   production context sizes, and produces `advice_test_plan.md` with 2 suggestions
-   per model: one aggressive (max GPU layers) and one moderate (safer margin).
-2. **User tests** each suggestion manually via `./start.sh`, recording VRAM usage,
-   speed measurements, OOM results, and split logs into `advice_test_plan.md`.
-3. **gpu-optimizer agent** analyzes test results and picks the final optimal
-   configuration for each model.
-4. **Update models.conf** with the chosen profiles.
-5. **doc-keeper agent** updates documentation to reflect any changes.
-6. **Commit** all changes.
+Full test results in `claude_plans/advice_test_plan.md`.

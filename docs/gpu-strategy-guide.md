@@ -215,13 +215,52 @@ This depends on the specific model architecture and is not predictable in advanc
 
 ### Batch size and VRAM
 
-`-b` (batch) and `-ub` (micro-batch) control prompt processing chunk size.
-Larger values use more VRAM for compute buffers.
+`-b` (batch) and `-ub` (micro-batch) are independent parameters:
 
-| Context | Use case | Recommended -b/-ub | Reason |
-|---------|----------|-------------------|--------|
-| Benchmark (10K) | HumanEval (~400 token prompts) | 512 | Saves VRAM for more GPU layers |
-| Production (64K-256K) | Interactive, long prompts | 2048-4096 | Faster prompt ingestion |
+- **`-b` (logical batch):** How many tokens are scheduled per prompt processing
+  step. Affects prompt ingestion speed. Has minimal direct VRAM impact.
+- **`-ub` (micro-batch / physical batch):** How many tokens the GPU computes at
+  once within a batch. **This determines the compute buffer size in VRAM.**
 
-Savings from smaller batch: typically 2-4 GB per GPU. At 10K context, this can
-free enough room for 1-4 additional layers on GPU compared to production settings.
+These can be set independently. `-b 2048 -ub 512` gives fast prompt processing
+(2048 tokens per step) with a small compute buffer (sized for 512 tokens).
+
+**Defaults (llama.cpp server and Ollama):**
+- `-b 2048` (llama.cpp server default; Ollama uses 512-1024)
+- `-ub 512` (universal default in both llama.cpp and Ollama)
+
+**Rule of thumb:** Always use `-ub 512`. There is no meaningful performance
+penalty — the same work is done in more micro-batches, but the speed difference
+is negligible for interactive use. The VRAM savings are significant:
+
+| `-ub` value | Compute buffer (typical) | VRAM vs `-ub 512` |
+|-------------|-------------------------|-------------------|
+| 512 | ~448 MiB | baseline |
+| 1024 | ~897 MiB | +449 MiB wasted |
+| 2048 | ~1,500-2,400 MiB | +1,000-2,000 MiB wasted |
+
+Measured on GLM-4.7-Flash Q8_0. Exact sizes vary by model hidden dimension.
+
+**Production recommendation:** `-b 2048 -ub 512` for all profiles. Omitting
+`-ub` is fine since 512 is already the default, but explicit is clearer.
+
+**Benchmark recommendation:** `-b 512 -ub 512` — HumanEval prompts are ~400
+tokens, so the full prompt fits in one batch. No need for a larger `-b`.
+
+**When to increase `-b`:** Only if you routinely paste very large documents
+(50K+ tokens) in a single message and the prompt ingestion wait is noticeable.
+Going from `-b 2048` to `-b 4096` processes prompts in fewer chunks. The VRAM
+impact of `-b` alone is minimal — it only controls scheduling, not GPU buffers.
+
+**Not like embedding chunking:** In RAG/embedding pipelines, document chunks are
+processed independently, so you need overlap to preserve context at boundaries.
+Prompt batching in llama.cpp is different — chunks are processed sequentially
+into the same KV cache. After chunk 1 is processed, its full attention state is
+stored. Chunk 2 attends to all previous tokens via the KV cache. No information
+is lost at chunk boundaries, no overlap is needed. `-b` is purely a performance
+knob — the end result is identical regardless of chunk size.
+
+**Common mistake:** Setting `-b X -ub X` (same value for both). This wastes
+VRAM on a larger compute buffer without any benefit. The only reason to increase
+`-ub` above 512 is if profiling shows a measurable prompt processing bottleneck,
+which is rare in practice.

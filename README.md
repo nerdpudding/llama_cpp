@@ -46,9 +46,9 @@ Ollama doesn't support the features needed for this hardware and these models:
 |-------|-----------|-------|---------|----------|
 | GLM-4.7 Flash Q4_K_M | 18 GB | ~140 t/s | 128K | Fast tasks, single GPU (Strategy A) |
 | GLM-4.7 Flash Q8_0 | 30 GB | ~105 t/s | 128K | Higher quality, dual GPU (Strategy C) |
-| GPT-OSS 120B F16 | 61 GB | ~22 t/s | 64K | Large MoE, partial CPU offload (Strategy D) |
+| GPT-OSS 120B F16 | 61 GB | ~21 t/s | 64K | Large MoE, partial CPU offload (Strategy D) |
 | Qwen3-Coder-Next UD-Q6_K_XL | 64 GB | ~24 t/s | 256K | Coding baseline, best quality |
-| Qwen3-Coder-Next UD-Q5_K_XL | 57 GB | ~30 t/s | 256K | Coding speed option |
+| Qwen3-Coder-Next UD-Q5_K_XL | 57 GB | ~28 t/s | 256K | Coding speed option |
 
 ## Repository Structure
 
@@ -174,10 +174,10 @@ Available models (defined in `models.conf`):
 | Section ID | Model | Speed | Context |
 |------------|-------|-------|---------|
 | `glm-flash-q4` | GLM-4.7 Flash Q4_K_M | Fast | 128K |
-| `glm-flash` | GLM-4.7 Flash Q8_0 | Fast | 128K |
+| `glm-flash-q8` | GLM-4.7 Flash Q8_0 | Fast | 128K |
 | `glm-flash-exp` | GLM-4.7 Flash Q8_0 (experimental) | Fast | 128K |
-| `gpt-oss-120b` | GPT-OSS 120B F16 | ~20 t/s | 64K |
-| `qwen3-coder-q5` | Qwen3-Coder-Next UD-Q5_K_XL (speed) | 25.8 t/s | 256K |
+| `gpt-oss-120b` | GPT-OSS 120B F16 | ~21 t/s | 64K |
+| `qwen3-coder-q5` | Qwen3-Coder-Next UD-Q5_K_XL (speed) | ~28 t/s | 256K |
 | `qwen3-coder` | Qwen3-Coder-Next UD-Q6_K_XL (baseline) | 21.4 t/s | 256K |
 | `qwen3-coder-q6k` | Qwen3-Coder-Next Q6_K | ~21 t/s | 256K |
 

@@ -6,8 +6,8 @@ Five models are configured in `models.conf` and selectable via `./start.sh` on a
 
 - **GLM-4.7 Flash Q4_K_M** — ~140 t/s, 128K context, single GPU (Strategy A)
 - **GLM-4.7 Flash Q8_0** — ~105 t/s, 128K context, dual GPU split (Strategy C)
-- **GPT-OSS 120B F16** — ~22 t/s, 64K context, large MoE with CPU expert offloading (Strategy D)
-- **Qwen3-Coder-Next UD-Q5_K_XL** — ~30 t/s, 256K context, coding speed option
+- **GPT-OSS 120B F16** — ~21 t/s, 64K context, large MoE with CPU expert offloading (Strategy D)
+- **Qwen3-Coder-Next UD-Q5_K_XL** — ~28 t/s, 256K context, coding speed option
 - **Qwen3-Coder-Next UD-Q6_K_XL** — ~24 t/s, 256K context, coding baseline
 
 All models are MoE. GPU placement uses optimized `-ot` regex configurations for per-layer tensor placement. See `docs/gpu-strategy-guide.md` for the decision tree and `docs/bench-test-results.md` for measured performance data. Latest EvalPlus HumanEval+ scores are in `benchmarks/evalplus/results/REPORT.md`.
@@ -30,12 +30,17 @@ All models are MoE. GPU placement uses optimized `-ot` regex configurations for 
 - OOM tested all profiles, documented results in `docs/bench-test-results.md`
 - Plan: `claude_plans/PLAN_bench_gpu_optimization.md`
 
-## Next Up
+### Production profile optimization (2026-02-16)
+- All production profiles optimized with explicit GPU layer placement and `-b 2048 -ub 512`
+- Key discovery: `-ub` (micro-batch) determines compute buffer VRAM — switching to `-ub 512` freed 449-2000 MiB per GPU
+- GLM Q4: Strategy A (single GPU), 142.66 t/s
+- GLM Q8: Strategy C (33+14=47/47), 103.79 t/s
+- GPT-OSS 120B: Strategy D (11+4=15/36), 20.72 t/s
+- Qwen3 UD-Q5: Strategy D (17+8=25/48), 27.89 t/s (+8% from 25.8)
+- Documented in `docs/gpu-strategy-guide.md` and `docs/lessons_learned.md`
+- Plan: `claude_plans/PLAN_bench_gpu_optimization.md`
 
-### Production profile optimization
-- Review and optimize production profiles for GLM Flash (Q4, Q8) and Qwen3-Coder-Next (UD-Q5, UD-Q6, Q6K)
-- GPT-OSS 120B production profile already optimized — no changes needed
-- Production uses much larger context (64K-256K) and batch sizes (-b 2048-4096) than bench (10K, -b 512) — layer splits must be determined independently via OOM testing at production settings
+## Next Up
 
 ### Temperature/sampling parameter sweeps
 - Test temperature 0.6 / 0.8 / 1.0 for agentic coding tasks

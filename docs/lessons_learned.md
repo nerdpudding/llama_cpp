@@ -109,6 +109,36 @@ model quick reference table in `docs/gpu-strategy-guide.md`.
 
 ---
 
+## 5. Set `-ub` equal to `-b`, wasting VRAM on oversized compute buffers
+
+**What happened:** Production profiles for GPT-OSS 120B used `-b 2048 -ub 2048`
+and the gpu-optimizer agent recommended `-b 1024 -ub 1024` for GLM Q8. The GLM
+Q8 aggressive profile (33+14=47/47) OOMed on CUDA0 by 372 MiB — the compute
+buffer was 897 MiB with `-ub 1024`. With the default `-ub 512`, it would have
+been ~448 MiB, and the profile would have fit.
+
+**Root cause:** Treating `-b` and `-ub` as a single parameter. They control
+different things:
+- `-b` (logical batch) = how many tokens per prompt processing step → speed
+- `-ub` (micro-batch) = GPU compute chunk size → **determines compute buffer VRAM**
+
+Setting both to the same value wastes VRAM on a compute buffer sized for the
+full batch when the GPU only needs a buffer sized for one micro-batch. The
+default `-ub 512` is what both llama.cpp and Ollama use.
+
+**Measured impact:**
+- `-ub 512`: ~448 MiB compute buffer (GLM Q8)
+- `-ub 1024`: ~897 MiB compute buffer (+449 MiB wasted)
+- `-ub 2048`: ~1,500-2,400 MiB compute buffer (+1,000-2,000 MiB wasted)
+
+**Prevention rule:** Always use `-ub 512` (or omit it to use the default).
+Only set `-b` explicitly when you need to control prompt processing speed.
+The correct production setting is `-b 2048 -ub 512` (or just `-b 2048`).
+Never write `-b X -ub X` with the same value. See `docs/gpu-strategy-guide.md`
+"Batch size and VRAM" for the full reference.
+
+---
+
 ## General prevention rules
 
 1. **Read the model card first.** Before any configuration work on a model,

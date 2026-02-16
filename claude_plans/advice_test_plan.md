@@ -107,12 +107,12 @@ affects prompt ingestion of very long prompts slightly).
 
 | Metric | Value |
 |--------|-------|
-| CUDA0 VRAM (MiB / %) | |
-| CUDA1 VRAM (MiB / %) | |
-| Graph splits (bs=1) | |
-| Speed (t/s) | |
-| OOM? | |
-| Notes | |
+| CUDA0 VRAM (MiB / %) | 21,793 / 88% |
+| CUDA1 VRAM (MiB / %) | 2,572 / 15% (idle, OS/display only) |
+| Graph splits (bs=1) | 2 |
+| Speed (t/s) | 142.66 |
+| OOM? | No |
+| Notes | All 48/48 layers on CUDA0. KV cache 3,595 MiB (128K, q8_0). Prompt eval 186 t/s. 2036 tokens generated. Exceeds bench speed (~140 t/s). |
 
 #### Suggestion B — Moderate (single GPU, -b 1024)
 
@@ -129,7 +129,7 @@ affects prompt ingestion of very long prompts slightly).
 
 ## 2. GLM-4.7 Flash Q8_0 (and Q8_0 experimental)
 
-### Current production profile (`[glm-flash]` and `[glm-flash-exp]`)
+### Current production profile (`[glm-flash-q8]` and `[glm-flash-exp]`)
 
 ```
 CTX_SIZE=131072
@@ -258,16 +258,31 @@ EXTRA_ARGS=--jinja -np 1 --temp 1.0 --top-p 0.95 --min-p 0.01 -ot blk\.([0-9]|[1
 
 ### Test results
 
-#### Suggestion A — Aggressive (33+14, all GPU, -b 1024)
+#### Suggestion A — Aggressive (33+14, all GPU, -b 1024 -ub 1024) — FAILED
 
 | Metric | Value |
 |--------|-------|
-| CUDA0 VRAM (MiB / %) | |
-| CUDA1 VRAM (MiB / %) | |
-| Graph splits (bs=1) | |
-| Speed (t/s) | |
-| OOM? | |
-| Notes | |
+| CUDA0 VRAM (MiB / %) | OOM during compute buffer allocation |
+| CUDA1 VRAM (MiB / %) | N/A |
+| Graph splits (bs=1) | N/A |
+| Speed (t/s) | N/A |
+| OOM? | **YES — CUDA0** |
+| Notes | Model loaded OK (CUDA0: 20,698 MiB, CUDA1: 9,339 MiB, KV: 2,448+1,148 MiB). Failed allocating 897 MiB compute buffer on CUDA0 — only 525 MiB free after model+KV. Shortfall: 372 MiB. Root cause: `-ub 1024` creates ~897 MiB compute buffer. With default `-ub 512` it would be ~448 MiB and would fit. |
+
+#### Suggestion A-revised — Aggressive (33+14, all GPU, -b 2048 -ub 512) — PASS
+
+Uses the correct `-ub 512` (llama.cpp default). Faster prompt processing (-b 2048)
+AND smaller compute buffer (~448 MiB vs 897 MiB). This is strictly better than
+the original suggestion A.
+
+| Metric | Value |
+|--------|-------|
+| CUDA0 VRAM (MiB / %) | 23,518 / ~98% |
+| CUDA1 VRAM (MiB / %) | 10,894 / ~85% |
+| Graph splits (bs=1) | 23 |
+| Speed (t/s) | 103.79 |
+| OOM? | No |
+| Notes | All 47/47 layers on GPU. Compute buffer 448 MiB CUDA0, 331 MiB CUDA1 (confirms -ub 512 sizing). KV: 2,372+1,224 MiB. Prompt eval 162 t/s. 1923 tokens generated. Matches bench speed (~105 t/s). |
 
 #### Suggestion B — Moderate (31+14, 2 CPU layers, -b 1024)
 
@@ -392,16 +407,16 @@ data helps decide whether suggestion A is feasible.
 
 ### Test results
 
-#### Suggestion A — Aggressive (11+4, -b 1024)
+#### Suggestion A-revised — Aggressive (11+4, -b 2048 -ub 512) — PASS
 
 | Metric | Value |
 |--------|-------|
-| CUDA0 VRAM (MiB / %) | |
-| CUDA1 VRAM (MiB / %) | |
-| Graph splits (bs=1) | |
-| Speed (t/s) | |
-| OOM? | |
-| Notes | |
+| CUDA0 VRAM (MiB / %) | 21,615 / ~90% |
+| CUDA1 VRAM (MiB / %) | 9,575 / ~75% |
+| Graph splits (bs=1) | 68 |
+| Speed (t/s) | 20.72 |
+| OOM? | No |
+| Notes | 15/36 layers on GPU (was 14/36). Compute buffer 1,082 MiB CUDA0, 398 MiB CUDA1 (with -ub 512). KV: 1,642+820 MiB. CPU mapped: 62,221 MiB. Prompt eval 37.6 t/s. 1438 tokens generated. Speed same as previous 14/36 profile (~20 t/s). Extra layer benefit is marginal for this CPU-bound model. |
 
 #### Suggestion B — Moderate (11+3, -b 1024, same layers)
 
@@ -532,16 +547,16 @@ EXTRA_ARGS=--jinja -np 1 -b 1024 -ub 1024 --no-context-shift --temp 1.0 --top-p 
 
 ### Test results
 
-#### Suggestion A — Aggressive (17+8=25/48, -b 1024)
+#### Suggestion A-revised — Aggressive (17+8=25/48, -b 2048 -ub 512) — PASS
 
 | Metric | Value |
 |--------|-------|
-| CUDA0 VRAM (MiB / %) | |
-| CUDA1 VRAM (MiB / %) | |
-| Graph splits (bs=1) | |
-| Speed (t/s) | |
-| OOM? | |
-| Notes | |
+| CUDA0 VRAM (MiB / %) | ~22,710 / ~95% |
+| CUDA1 VRAM (MiB / %) | ~10,998 / ~86% |
+| Graph splits (bs=1) | 130 |
+| Speed (t/s) | 27.89 |
+| OOM? | No |
+| Notes | 25/48 layers on GPU (was 22/48). Compute buffer 1,224 MiB CUDA0, 669 MiB CUDA1. KV: 2,176+1,088 MiB (12 attention layers at 256K). RS (DeltaNet): 50+25 MiB. CPU mapped: 53,958 MiB. Prompt eval 44.3 t/s. 757 tokens generated. +8% speed vs previous 22/48 profile (25.8 t/s). |
 
 #### Suggestion B — Moderate (16+8=24/48, -b 1024)
 
