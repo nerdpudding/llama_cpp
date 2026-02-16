@@ -67,10 +67,10 @@ Ollama doesn't support the features needed for this hardware and these models:
 ├── .env.example                   # Generic template with all variables documented
 ├── docs/
 │   ├── gpu-strategy-guide.md              # GPU placement decision tree
-│   ├── bench-test-results.md              # Benchmark optimization results
-│   ├── lessons_learned.md                 # Mistakes and prevention rules
-│   ├── gpt-oss-120b-configuration-guide.md
-│   └── llama-cpp-flags-and-qwen3-strategy.md
+│   ├── client-settings.md                 # Recommended client-side sampler settings per model
+│   ├── bench-test-results.md              # Bench profile GPU optimization (VRAM, speeds, OOM tests)
+│   ├── dgx-spark-comparison.md            # DGX Spark vs desktop comparison (WIP article)
+│   └── lessons_learned.md                 # Mistakes and prevention rules
 ├── models/                        # GGUF files (gitignored)
 │   ├── .gitkeep
 │   ├── documentation/             # Model cards (README from HuggingFace)
@@ -87,17 +87,19 @@ Ollama doesn't support the features needed for this hardware and these models:
 │       ├── generate-report.py     # Results → comparison table
 │       ├── reference-scores.json  # Published proprietary model scores
 │       └── results/               # Benchmark outputs (gitignored)
-├── archive/
-│   └── env-templates/             # Archived per-model .env files (replaced by models.conf)
+│           └── REPORT.md          # Latest EvalPlus HumanEval+ results
+├── archive/                       # Archived plans, old docs, superseded files
 ├── claude_plans/                  # Claude Code plan files
 ├── llama.cpp/                     # llama.cpp source (separate git repo, gitignored)
 └── .claude/
     └── agents/                    # Claude Code specialized agents
+        ├── gpu-optimizer.md
         ├── benchmark.md
         ├── builder.md
         ├── diagnose.md
         ├── model-manager.md
-        └── api-integration.md
+        ├── api-integration.md
+        └── doc-keeper.md
 ```
 
 ## Prerequisites
@@ -210,8 +212,11 @@ The `llama.cpp/` directory is a separate git repository — it's gitignored from
 
 ## Documentation
 
-- **[GPT-OSS 120B Configuration Guide](docs/gpt-oss-120b-configuration-guide.md)** — Detailed setup, memory breakdown, performance data, and failed attempts for GPT-OSS 120B
-- **[llama.cpp Flags & Qwen3 Strategy](docs/llama-cpp-flags-and-qwen3-strategy.md)** — Deep-dive into flags, quantization comparison, `-ot` regex lookup tables, and all tested strategies for Qwen3-Coder-Next
+- **[GPU Strategy Guide](docs/gpu-strategy-guide.md)** — GPU placement decision tree, strategies A-D, graph splits, and tuning guidance
+- **[Client Settings](docs/client-settings.md)** — Recommended temperature, top_p, top_k, min_p, and system prompt settings per model for any client
+- **[Bench Profile Test Results](docs/bench-test-results.md)** — GPU optimization data: VRAM usage, speeds, OOM failures, and layer split decisions
+- **[EvalPlus Benchmark Results](benchmarks/evalplus/results/REPORT.md)** — Latest HumanEval+ scores for all models vs proprietary references
 - **[EvalPlus Benchmark Runner](benchmarks/evalplus/README.md)** — HumanEval+ coding benchmark setup, usage, and comparison with proprietary models
+- **[Lessons Learned](docs/lessons_learned.md)** — Common mistakes and prevention rules
 - **[ROADMAP.md](ROADMAP.md)** — Current status and future plans
 - **[docker-compose.example.yml](docker-compose.example.yml)** — Annotated compose template with full variable reference

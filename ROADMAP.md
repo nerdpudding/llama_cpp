@@ -10,7 +10,7 @@ Five models are configured in `models.conf` and selectable via `./start.sh` on a
 - **Qwen3-Coder-Next UD-Q5_K_XL** — ~30 t/s, 256K context, coding speed option
 - **Qwen3-Coder-Next UD-Q6_K_XL** — ~24 t/s, 256K context, coding baseline
 
-All models are MoE. GPU placement uses optimized `-ot` regex configurations for per-layer tensor placement. See `docs/gpu-strategy-guide.md` for the decision tree and `docs/bench-test-results.md` for measured performance data.
+All models are MoE. GPU placement uses optimized `-ot` regex configurations for per-layer tensor placement. See `docs/gpu-strategy-guide.md` for the decision tree and `docs/bench-test-results.md` for measured performance data. Latest EvalPlus HumanEval+ scores are in `benchmarks/evalplus/results/REPORT.md`.
 
 **Monitoring dashboard:** `start.sh` now launches the container in the background, waits for server health, and opens a Python curses TUI (`dashboard.py`) with four panels: server logs (scrollable), per-GPU VRAM/utilization/power/temp monitoring, system stats (CPU/RAM/swap/container), and keyboard controls (`q` stop & exit, `r` stop & return to menu). Docker healthcheck is also configured for container-level health awareness. Use `--no-dashboard` for raw log output.
 
@@ -18,14 +18,24 @@ All models are MoE. GPU placement uses optimized `-ot` regex configurations for 
 
 ### Formal benchmarks (EvalPlus HumanEval+)
 - EvalPlus benchmark runner in `benchmarks/evalplus/` — runs HumanEval+ (164 Python problems) against all models via the llama.cpp OpenAI API
-- 5 benchmark profiles in `models.conf` (bench-*) with reduced 10K context
-- Code generation on host, evaluation in Docker sandbox (`ganler/evalplus`) for safety
-- Comparison report with published scores for proprietary models (Claude, GPT, DeepSeek, Codestral, etc.)
-- Claude Opus 4.6 benchmark via `claude -p` CLI (Max subscription) — solves problems from prompts only, no code execution or internet. Run via `benchmarks/evalplus/benchmark.sh`
-- Production sampler settings updated per official model card recommendations
+- 5 local models + 2 Claude configurations benchmarked (2026-02-15)
+- Optimized bench profiles in `models.conf` (bench-*) with 10K context and maximized GPU layers
+- Top local result: Qwen3-Coder-Next UD-Q5_K_XL at 93.9% HumanEval / 90.9% HumanEval+
+- Claude Opus 4.6: 98.2% / 95.1% (non-thinking) and 99.4% / 93.9% (thinking)
+- Full results: `benchmarks/evalplus/results/REPORT.md`
 - See `benchmarks/evalplus/README.md` for setup and usage
 
+### Bench profile GPU optimization
+- All bench profiles optimized: reduced context (16K→10K), smaller batch sizes (-b 512 -ub 512), more GPU layers
+- OOM tested all profiles, documented results in `docs/bench-test-results.md`
+- Plan: `claude_plans/PLAN_bench_gpu_optimization.md`
+
 ## Next Up
+
+### Production profile optimization
+- Review and optimize production profiles for GLM Flash (Q4, Q8) and Qwen3-Coder-Next (UD-Q5, UD-Q6, Q6K)
+- GPT-OSS 120B production profile already optimized — no changes needed
+- Production uses much larger context (64K-256K) and batch sizes (-b 2048-4096) than bench (10K, -b 512) — layer splits must be determined independently via OOM testing at production settings
 
 ### Temperature/sampling parameter sweeps
 - Test temperature 0.6 / 0.8 / 1.0 for agentic coding tasks
@@ -34,7 +44,6 @@ All models are MoE. GPU placement uses optimized `-ot` regex configurations for 
 
 ### VRAM optimization experiments
 - Test different KV cache types (q5_0 as middle ground between q8_0 and q4_0)
-- Experiment with batch sizes (-b/-ub) for prompt processing speed vs. VRAM trade-off
 - Test `--no-op-offload` for potential token generation speed improvement
 
 ## Future

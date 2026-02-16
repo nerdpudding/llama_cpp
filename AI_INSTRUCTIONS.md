@@ -41,9 +41,10 @@ For non-trivial changes, follow this order:
 ├── .env.example                      # Generic template with all variables documented
 ├── docs/                             # Technical documentation
 │   ├── gpu-strategy-guide.md           # ** GPU placement decision tree — read before configuring models **
-│   ├── lessons_learned.md              # Mistakes made and prevention rules
-│   ├── gpt-oss-120b-configuration-guide.md
-│   └── llama-cpp-flags-and-qwen3-strategy.md
+│   ├── client-settings.md              # ** Recommended client-side sampler settings per model **
+│   ├── bench-test-results.md           # Bench profile GPU optimization results (VRAM, speeds, OOM tests)
+│   ├── dgx-spark-comparison.md         # DGX Spark vs desktop comparison (WIP article)
+│   └── lessons_learned.md              # Mistakes made and prevention rules
 ├── models/                           # GGUF model files (gitignored)
 │   ├── documentation/                # Model cards from HuggingFace
 │   │   ├── README_modelcard_GLM-4.7-Flash.md
@@ -70,9 +71,9 @@ For non-trivial changes, follow this order:
 │       ├── humaneval_prompts.json    # 164 HumanEval problem prompts
 │       ├── reference-scores.json     # Published proprietary model scores
 │       └── results/                  # Benchmark outputs (gitignored)
+│           └── REPORT.md             # ** Latest EvalPlus HumanEval+ results — authoritative **
 ├── claude_plans/                     # Active plans (see Plan rules below)
 ├── archive/                          # Archived plans, old docs, superseded files
-│   └── env-templates/                # Archived per-model .env files (replaced by models.conf)
 ├── llama.cpp/                        # llama.cpp source (separate git repo, gitignored)
 └── .claude/
     └── agents/                       # Claude Code specialized agents
@@ -81,7 +82,8 @@ For non-trivial changes, follow this order:
         ├── builder.md
         ├── diagnose.md
         ├── model-manager.md
-        └── api-integration.md
+        ├── api-integration.md
+        └── doc-keeper.md
 ```
 
 ## GPU strategy
@@ -122,6 +124,7 @@ Use agents when their role matches the task. Don't reinvent what an agent alread
 | `builder` | Docker image builds, llama.cpp updates, Dockerfile changes |
 | `diagnose` | System status, GPU health, VRAM check, container troubleshooting |
 | `api-integration` | OpenAI-compatible API setup, client configuration, connectivity testing |
+| `doc-keeper` | Documentation audits, consistency checks, cross-reference verification, hierarchy maintenance |
 
 After changes that affect an agent's domain, update that agent's instructions.
 

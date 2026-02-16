@@ -1,6 +1,6 @@
 # Plan: Benchmark GPU Layer Optimization
 
-**Status: IN PROGRESS — models.conf updated, OOM testing in progress**
+**Status: BENCH PROFILES COMPLETE — production profile optimization remaining**
 
 ## Goal
 
@@ -116,36 +116,49 @@ Benchmark profiles intentionally omit temperature/top-p/min-p sampler arguments.
 evalplus sends `temperature=0` via API (greedy decoding), which overrides any
 server-side defaults. Adding redundant sampler args would just add noise.
 
-## Remaining steps
+## Completed steps
 
-### 1. OOM testing — IN PROGRESS
+### 1. OOM testing — DONE
 
-Test each optimized bench profile via `./start.sh`:
-- [ ] `bench-glm-flash-q4` — start, generate response, check nvidia-smi
-- [ ] `bench-glm-flash-q8` — start, generate response, check nvidia-smi
-- [ ] `bench-gpt-oss-120b` — start, generate response, check nvidia-smi
-- [ ] `bench-qwen3-coder-ud-q5` — start, generate response, check nvidia-smi
-- [ ] `bench-qwen3-coder-ud-q6` — start, generate response, check nvidia-smi
-- [ ] `bench-qwen3-coder-q6k` — start, generate response, check nvidia-smi
+All optimized bench profiles tested via `./start.sh`:
+- [x] `bench-glm-flash-q4` — passed
+- [x] `bench-glm-flash-q8` — passed
+- [x] `bench-gpt-oss-120b` — passed
+- [x] `bench-qwen3-coder-ud-q5` — passed
+- [x] `bench-qwen3-coder-ud-q6` — passed
+- [x] `bench-qwen3-coder-q6k` — passed
 
-**If any profile OOMs:** reduce the CUDA1 layer range by 1 and retest.
+Actual tested splits documented in `docs/bench-test-results.md`.
 
-### 2. Add bench profiles to start.sh model picker
+### 2. Bench profiles in start.sh — DONE
 
-Add a separate "Benchmark profiles" section in the start.sh menu so bench configs
-can be selected for manual testing. (May already be working if start.sh reads all
-sections from models.conf.)
+start.sh reads all sections from models.conf, bench profiles are selectable.
 
-### 3. Full benchmark run with optimized profiles
+### 3. Full benchmark run — DONE
 
-After all OOM tests pass, run the full benchmark suite with the new profiles
-and compare inference speed (t/s) against previous runs.
+Full EvalPlus HumanEval+ benchmark completed 2026-02-15. Results in
+`benchmarks/evalplus/results/REPORT.md`. All 5 local models + 2 Claude
+configurations benchmarked.
 
 ## Order of execution
 
 1. ~~Manual GPT-OSS test → confirm 10K is safe~~ — DONE
 2. ~~Update models.conf bench profiles~~ — DONE
-3. OOM test per model via start.sh — IN PROGRESS
-4. Add bench profiles to start.sh menu (if not already working)
-5. Full benchmark run with optimized profiles
-6. Compare speeds and update documentation
+3. ~~OOM test per model via start.sh~~ — DONE
+4. ~~Add bench profiles to start.sh menu~~ — DONE
+5. ~~Full benchmark run with optimized profiles~~ — DONE (see REPORT.md)
+6. ~~Compare speeds and update documentation~~ — DONE
+
+## Remaining: Production profile optimization
+
+Bench profiles are fully optimized and benchmarked. Production profiles still
+need review and optimization for the following models:
+
+- [ ] GLM-4.7 Flash Q4_K_M — review if current FIT=on is optimal
+- [ ] GLM-4.7 Flash Q8_0 — review layer split, may benefit from explicit -ot
+- [ ] Qwen3-Coder-Next UD-Q5_K_XL — check if current 15+7 split can be improved
+- [ ] Qwen3-Coder-Next UD-Q6_K_XL — check if current 13+6 split can be improved
+- [ ] Qwen3-Coder-Next Q6_K — check if current split can be improved
+
+**Exception:** GPT-OSS 120B production profile is already optimized (12+4=16/36,
+64K context). No changes needed.
