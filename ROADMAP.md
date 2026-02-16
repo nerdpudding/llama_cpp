@@ -51,41 +51,29 @@ All models are MoE. GPU placement uses optimized `-ot` regex configurations for 
 - Researched DGX Spark vs desktop for GPT-OSS 120B inference
 - Draft article in `docs/dgx-spark-comparison.md`, data archived in `archive/dgx-spark-benchmarks.md`
 
+### Streamlined model onboarding (2026-02-16)
+- `/add-model` skill with 8-phase guided workflow for evaluating and adding new GGUF models
+- Uses specialized agents (model-manager, gpu-optimizer, benchmark, doc-keeper) at each phase
+- Candidate models listed in README under "Adding New Models"
+
 ## Next Up
 
-### Streamlined model onboarding
-- Repeatable workflow for evaluating and adding new GGUF models using specialized agents
-- Five candidate models already have model cards in `models/documentation/CANDIDATES/`
-- Plan: `claude_plans/PLAN_add_model_flow.md`
+*(Nothing currently scheduled — see Future for planned work.)*
 
 ## Future
 
-### API integration
+### API integration with coding assistants
 - Configure Claude Code to use the local llama-server as an alternative backend
 - Test integration with Continue.dev, aider, and other coding assistants
 - Set up OpenAI-compatible client configurations for various tools
 - Define use cases: when local inference is worthwhile vs. cloud API
+- Goal: agents can be configured to use local models alongside cloud APIs (e.g. Claude for complex tasks, local model for simpler ones)
 
-### Multi-model hot-swap
-- Test `--model-store` for hot-swapping models without restarting the server (when available in llama.cpp)
-- Evaluate memory management for keeping multiple models partially loaded
-
-### Advanced GPU utilization
-- Explore row split mode (`-sm row`) for asymmetric GPU workloads
-- Test with future llama.cpp DeltaNet kernel optimizations
-- Benchmark impact of `-t` thread count on CPU expert processing
+### Model switching from API / agents
+- Allow switching the active model via API call or agent action — stop the current server, load a different model, restart
+- Enable workflows where an agent spins up a specific model for a task and shuts it down when done
+- Investigate whether llama.cpp's `--model-store` (if/when available) could handle this without full restarts
 
 ### Extended benchmarks
-- Evaluate which additional benchmarks are useful beyond HumanEval+
+- Add benchmarks for tasks beyond coding (reasoning, instruction following, tool calling)
 - Regression testing when updating llama.cpp
-
-## Candidate Models
-
-Five models are being evaluated for potential addition to the project. Model cards are in `models/documentation/CANDIDATES/`.
-
-- **Qwen3-Next-80B-A3B-Instruct** — 80B total / 3B active MoE with hybrid Gated DeltaNet + Gated Attention, ultra-long context (256K native, extensible to 1M), strong general reasoning and coding
-- **Nemotron-3-Nano-30B-A3B** — 30B total / 3.5B active hybrid Mamba2-Transformer MoE, reasoning with tool calling, excels at math/coding/agentic tasks (SWE-bench 38.8%)
-- **Devstral-Small-2-24B-Instruct** — 24B dense model specialized for agentic coding and software engineering (SWE-bench 68.0%, Terminal Bench 22.5%), supports vision
-- **Ministral-3-14B-Instruct** — 14B (13.5B LM + 0.4B vision encoder), general-purpose instruct with vision, multilingual, edge-optimized
-- **Ministral-3-14B-Reasoning** — Same architecture as 14B Instruct but post-trained for reasoning with `<think>` blocks, strong at math/STEM (AIME25 85.0%)
-
