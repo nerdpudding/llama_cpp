@@ -58,7 +58,7 @@ Plan: `claude_plans/first_assignment_16_feb.md`
 
 ## Session 2: Add new model (separate session)
 
-Plan: `claude_plans/PLAN_add_model_flow.md`
+Plan: `archive/2026-02-16_add_model_flow.md` (completed)
 
 ### Step 1: Set up "add model" workflow
 - [x] Create `/add-model` skill (`.claude/skills/add-model/SKILL.md`)
@@ -66,12 +66,13 @@ Plan: `claude_plans/PLAN_add_model_flow.md`
 - [x] Update gpu-optimizer agent with untested profile + bench profile conventions
 - [x] Update benchmark agent with new bench profile file checklist
 
-### Step 2: Test the workflow with a candidate (user picks which one)
-- [ ] Evaluate candidate model card
-- [ ] Download model and organize files
-- [ ] Create production profile (gpu-optimizer)
-- [ ] Find and document sampler settings
-- [ ] Test and optimize (user runs, shares logs)
-- [ ] Create bench profile (optional)
-- [ ] Run benchmark (optional)
-- [ ] Update all documentation (doc-keeper)
+### Step 2: Test workflow with Qwen3-Next-80B-A3B — DONE (16 feb)
+- [x] Evaluate candidate model card (Phase 1)
+- [x] Download model and organize files (Phase 2)
+- [x] Create production profile — gpu-optimizer, tested 28 t/s (Phase 3)
+- [x] Find and document sampler settings — temp 0.7, top_p 0.8, top_k 20 (Phase 4)
+- [x] Test and optimize — CUDA0 94%, CUDA1 88%, 130 graph splits (Phase 5)
+- [x] Create bench profile — bench-qwen3-next-ud-q5, 19+9=28/48 split (Phase 6)
+- [ ] Run benchmark — bench profile ready, not yet executed (Phase 7)
+- [x] Update all documentation — doc-keeper audit passed (Phase 8)
+- [x] Renamed qwen3-coder-q5 → qwen3-coder-ud-q5 for naming consistency
