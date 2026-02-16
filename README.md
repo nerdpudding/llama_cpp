@@ -1,4 +1,4 @@
-# llama.cpp Docker Wrapper for Dual-GPU Desktop
+# Docker Wrapper for llama.cpp
 
 Custom llama.cpp Docker build optimized for a dual-GPU desktop with asymmetric VRAM, targeting large MoE models that require precise GPU/CPU tensor placement.
 
