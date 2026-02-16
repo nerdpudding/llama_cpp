@@ -2,12 +2,13 @@
 
 ## Current Status
 
-Four models are configured in `models.conf` and selectable via `./start.sh` on a dual-GPU desktop (RTX 4090 + RTX 5070 Ti):
+Five models are configured in `models.conf` and selectable via `./start.sh` on a dual-GPU desktop (RTX 4090 + RTX 5070 Ti):
 
 - **GLM-4.7 Flash Q4_K_M** — ~140 t/s, 128K context, fast general tasks, reasoning, tool calling
 - **GLM-4.7 Flash Q8_0** — ~105 t/s, 128K context, higher quality reasoning and tool calling
 - **GPT-OSS 120B F16** — ~21 t/s, 128K context, deep reasoning, knowledge, structured output
 - **Qwen3-Coder-Next UD-Q5_K_XL** — ~28 t/s, 256K context, coding agents, agentic tasks
+- **Qwen3-Next-80B-A3B UD-Q5_K_XL** — ~28 t/s, 262K context, general-purpose reasoning, knowledge, agentic tasks, ultra-long context
 
 All models are MoE. GPU placement uses optimized `-ot` regex configurations for per-layer tensor placement. See `docs/gpu-strategy-guide.md` for the decision tree and `docs/bench-test-results.md` for measured performance data. Latest EvalPlus HumanEval+ scores are in `benchmarks/evalplus/results/REPORT.md`.
 

@@ -61,10 +61,10 @@ Plan: `claude_plans/first_assignment_16_feb.md`
 Plan: `claude_plans/PLAN_add_model_flow.md`
 
 ### Step 1: Set up "add model" workflow
-- [ ] Update model-manager agent with evaluation workflow
-- [ ] Update gpu-optimizer agent with "untested profile" convention
-- [ ] Update benchmark agent with current pipeline file checklist
-- [ ] Update todo with Session 2 completion
+- [x] Create `/add-model` skill (`.claude/skills/add-model/SKILL.md`)
+- [x] Update model-manager agent with candidate evaluation workflow
+- [x] Update gpu-optimizer agent with untested profile + bench profile conventions
+- [x] Update benchmark agent with new bench profile file checklist
 
 ### Step 2: Test the workflow with a candidate (user picks which one)
 - [ ] Evaluate candidate model card

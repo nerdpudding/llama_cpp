@@ -11,16 +11,17 @@ Quick reference for recommended client-side settings per model. Use these when c
 | GLM-4.7 Flash | General tasks, reasoning, tool calling | Yes (`<think>` blocks) | Yes (native) | 105-140 t/s |
 | GPT-OSS 120B | Deep reasoning, knowledge, structured output | Yes (configurable low/med/high) | Yes (native) | ~21 t/s |
 | Qwen3-Coder-Next | Coding agents, agentic tasks | No | Yes (native) | ~28 t/s |
+| Qwen3-Next-80B-A3B | General reasoning, knowledge, agentic, ultra-long context | No | Yes (native) | ~28 t/s (est.) |
 
 ## Sampler settings at a glance
 
-| Setting | GLM (general) | GLM (coding/tools) | GPT-OSS (all) | Qwen3-Coder (all) |
-|---------|--------------|-------------------|---------------|-------------------|
-| temperature | 1.0 | 0.7 | 1.0 | 1.0 |
-| top_p | 0.95 | 1.0 | 1.0 | 0.95 |
-| top_k | — | — | 0 (disabled) | 40 |
-| min_p | 0.01 | 0.01 | — | 0.01 |
-| system prompt | — | — | "Reasoning: low/med/high" | — |
+| Setting | GLM (general) | GLM (coding/tools) | GPT-OSS (all) | Qwen3-Coder (all) | Qwen3-Next (all) |
+|---------|--------------|-------------------|---------------|-------------------|------------------|
+| temperature | 1.0 | 0.7 | 1.0 | 1.0 | 0.7 |
+| top_p | 0.95 | 1.0 | 1.0 | 0.95 | 0.8 |
+| top_k | — | — | 0 (disabled) | 40 | 20 |
+| min_p | 0.01 | 0.01 | — | 0.01 | — |
+| system prompt | — | — | "Reasoning: low/med/high" | — | — |
 
 ---
 
@@ -89,6 +90,27 @@ Source: [Qwen model card "Best Practices"](https://huggingface.co/Qwen/Qwen3-Cod
 - No special system prompt needed, but system prompts are supported.
 
 **Server defaults (models.conf):** `--temp 1.0 --top-p 0.95 --top-k 40 --min-p 0.01` — matches official recommendation exactly. Clients should not need to override.
+
+## Qwen3-Next-80B-A3B
+
+Source: [Qwen model card "Best Practices"](https://huggingface.co/Qwen/Qwen3-Next-80B-A3B-Instruct), [Unsloth GGUF](https://huggingface.co/unsloth/Qwen3-Next-80B-A3B-Instruct-GGUF)
+
+| Setting | Recommended (all use cases) |
+|---------|----------------------------|
+| temperature | 0.7 |
+| top_p | 0.8 |
+| top_k | 20 |
+| min_p | — (not specified) |
+| repeat_penalty | — (not specified, use `presence_penalty` 0-2 if repetition occurs) |
+
+**Important notes:**
+- **This model is non-thinking only.** It does not produce `<think></think>` blocks. No `--reasoning-format` flag needed.
+- **Architecture identical to Qwen3-Coder-Next** — same 80B-A3B MoE, same hybrid DeltaNet + Gated Attention, same 48 layers, same 512 experts (10 active + 1 shared). Different training focus: general-purpose vs coding.
+- **Different samplers than Qwen3-Coder-Next.** The model card recommends lower temperature (0.7 vs 1.0) and different top_p/top_k. Follow the model card recommendations.
+- **262K native context** with ultra-long context performance (tested up to 1M with YaRN). No system prompt needed for standard use.
+- Same UD quant and KV cache considerations as Qwen3-Coder-Next apply.
+
+**Server defaults (models.conf):** `--temp 0.7 --top-p 0.8 --top-k 20` — matches official recommendation. Clients should not need to override.
 
 ## For benchmarks (EvalPlus)
 

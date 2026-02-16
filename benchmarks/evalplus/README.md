@@ -154,6 +154,7 @@ Profiles are defined in `models.conf` with a `bench-` prefix. They use the same 
 | `bench-glm-flash-q8` | GLM-4.7 Flash Q8_0 | Higher quality quant |
 | `bench-gpt-oss-120b` | GPT-OSS 120B F16 | Large MoE, partial CPU offload |
 | `bench-qwen3-coder-ud-q5` | Qwen3-Coder-Next UD-Q5_K_XL | Coding model |
+| `bench-qwen3-next-ud-q5` | Qwen3-Next-80B-A3B UD-Q5_K_XL | General-purpose, non-thinking |
 | `bench-opus4.6-thinking` | Claude Opus 4.6 | Extended thinking (via Claude Code) |
 | `bench-opus4.6` | Claude Opus 4.6 | Without thinking (via Claude Code) |
 

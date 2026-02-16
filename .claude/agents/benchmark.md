@@ -73,6 +73,29 @@ The project includes an EvalPlus HumanEval+ benchmark runner in `benchmarks/eval
 - Layer splits are optimized per model — see models.conf bench sections
 - For GPU placement strategy, use the **gpu-optimizer** agent
 
+### Adding a new bench profile (file checklist)
+
+When a new model is added via the `/add-model` workflow, these files need updates:
+
+1. **`models.conf`** — the gpu-optimizer agent creates the `[bench-<model-id>]` section (CTX_SIZE=10240, -b 512 -ub 512, optimized GPU layers, `--reasoning-format none` for thinking models). No changes needed in `benchmark.sh` — it auto-discovers `bench-*` profiles.
+
+2. **`benchmarks/evalplus/bench-client.conf`** — add a `[bench-<model-id>]` section if the model needs:
+   - A system prompt (e.g., GPT-OSS reasoning level, or coding-specific instructions)
+   - Custom MAX_TOKENS (default is 4096, some models need more)
+   - If no special client config needed, no section required (defaults apply)
+
+3. **`benchmarks/evalplus/generate-report.py`** — two updates:
+   - `DISPLAY_NAMES` dict: add `"bench-<model-id>": "<Display Name>"`
+   - `REFERENCE_MAP` dict: add entry mapping to `reference-scores.json` key IF official published scores exist for this model. If no reference scores, skip this dict.
+
+4. **`benchmarks/evalplus/README.md`** — add to the "Bench profiles" table with: profile ID, model name, context, GPU layers, notes.
+
+**What NOT to change:**
+- `benchmark.sh` — auto-discovers profiles, no hardcoded lists
+- `codegen.sh` / `codegen-custom.py` — generic, work for any model
+- `postprocess-solutions.py` — generic, handles think tags and markdown for all models
+- `evaluate.sh` — generic evaluation runner
+
 **Help the user with:**
 - Running benchmarks: `./benchmarks/evalplus/benchmark.sh --local` (or `--all`)
 - Interpreting results and the comparison report

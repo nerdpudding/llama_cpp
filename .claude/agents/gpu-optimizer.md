@@ -47,6 +47,44 @@ Follow the decision tree in `docs/gpu-strategy-guide.md` step by step:
 
 5. **Generate models.conf entry** with documented reasoning in comments.
 
+### Create untested production profile (new model)
+
+When adding a new model via the `/add-model` workflow:
+
+1. Follow the standard process above (read model card, check sizes, calculate VRAM, select strategy)
+2. Study existing optimized profiles in `models.conf` as reference for format and conventions
+3. Generate the profile with these fields:
+   - `NAME=<Model Name> <Quant>`
+   - `DESCRIPTION=<Short use case description>`
+   - `SPEED=~estimated XX t/s` (mark as estimated — will be updated after testing)
+   - `MODEL=<path relative to models/>`, `CTX_SIZE`, `N_GPU_LAYERS=99`, `FIT=off`
+   - `EXTRA_ARGS=--jinja -np 1 <sampler flags> <placement flags>`
+4. Add comments explaining: architecture source, strategy selected, VRAM calculations
+5. Add this comment: `# NOT YET TESTED — run ./start.sh <id> and share startup logs`
+6. Speed estimate: use existing models as reference (similar architecture/size → similar speed)
+
+**After testing (user shares startup logs):**
+- Verify VRAM usage matches predictions
+- Check for OOM, excessive graph splits, or wasted VRAM
+- Iterate on layer splits if needed (reduce CUDA1 layers by 1 if OOM)
+- Update SPEED with actual measured value (remove "estimated")
+- Remove `# NOT YET TESTED` comment, add actual measured data
+- Document tested values in comments (VRAM %, graph splits, actual t/s)
+
+### Create bench profile (new model)
+
+When creating a bench profile for EvalPlus HumanEval+:
+
+1. Section ID: `[bench-<model-id>]` (must start with `bench-` for auto-discovery)
+2. `CTX_SIZE=10240` (HumanEval worst case ~8.4K tokens)
+3. `-b 512 -ub 512` (prompts are ~400 tokens max, saves compute buffer VRAM)
+4. More GPU layers than production (less KV cache = more room for weights)
+5. `--reasoning-format none` if the model is a thinking model (so chain-of-thought goes into content field for evalplus postprocessor to strip)
+6. No sampler args (evalplus sends temperature=0 via API for greedy decoding)
+7. No DESCRIPTION or SPEED fields (bench profiles don't appear in the start.sh production menu)
+
+**Key differences from production:** smaller context saves GB of KV cache, smaller micro-batch saves compute buffer VRAM, freed space allows more model layers on GPU for faster inference.
+
 ### Optimize existing profiles
 
 - Compare bench vs production VRAM budgets (10K vs 128K-256K context)
@@ -88,7 +126,8 @@ Rules are evaluated left to right. First match wins.
 |-------|------|--------|--------|---------|--------|-------|
 | GLM-4.7-Flash | MoE | 30B | 3B | 64/layer, 4+1 shared | 47 (1 dense + 46 MoE) | Q4: 18 GB, Q8: 30 GB |
 | GPT-OSS 120B | MoE | 116.8B | 5.1B | 128/layer, 4 active | 36 (18 SWA) | F16: 61 GB |
-| Qwen3-Coder-Next | MoE | 80B | 3B | 512/layer, 10 active | 48 (75% DeltaNet) | Q5: 57 GB, Q6: 64 GB |
+| Qwen3-Coder-Next | MoE | 80B | 3B | 512/layer, 10 active + 1 shared | 48 (75% DeltaNet) | Q5: 57 GB, Q6: 64 GB |
+| Qwen3-Next-80B-A3B | MoE | 80B | 3B | 512/layer, 10 active + 1 shared | 48 (75% DeltaNet) | Q5: 53 GB |
 
 ## Files you own
 

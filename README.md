@@ -48,6 +48,7 @@ Ollama doesn't support the features needed for this hardware and these models:
 | GLM-4.7 Flash Q8_0 | 30 GB | ~105 t/s | 128K | Higher quality reasoning and tool calling |
 | GPT-OSS 120B F16 | 61 GB | ~21 t/s | 128K | Deep reasoning, knowledge, structured output |
 | Qwen3-Coder-Next UD-Q5_K_XL | 57 GB | ~28 t/s | 256K | Coding agents, agentic tasks |
+| Qwen3-Next-80B-A3B UD-Q5_K_XL | 53 GB | ~28 t/s | 262K | General reasoning, knowledge, agentic, ultra-long context |
 
 ## Repository Structure
 
@@ -75,7 +76,9 @@ Ollama doesn't support the features needed for this hardware and these models:
 │   ├── documentation/             # Model cards (README from HuggingFace)
 │   ├── GLM-4.7-Flash/
 │   ├── GPT-OSS-120b/
-│   └── Qwen3-Coder-Next/
+│   ├── Qwen3-Coder-Next/
+│   │   └── UD-Q5_K_XL/
+│   └── Qwen3-Next/
 │       └── UD-Q5_K_XL/
 ├── benchmarks/
 │   └── evalplus/                  # EvalPlus HumanEval+ coding benchmark runner
@@ -89,14 +92,16 @@ Ollama doesn't support the features needed for this hardware and these models:
 ├── claude_plans/                  # Claude Code plan files
 ├── llama.cpp/                     # llama.cpp source (separate git repo, gitignored)
 └── .claude/
-    └── agents/                    # Claude Code specialized agents
-        ├── gpu-optimizer.md
-        ├── benchmark.md
-        ├── builder.md
-        ├── diagnose.md
-        ├── model-manager.md
-        ├── api-integration.md
-        └── doc-keeper.md
+    ├── agents/                    # Claude Code specialized agents
+    │   ├── gpu-optimizer.md
+    │   ├── benchmark.md
+    │   ├── builder.md
+    │   ├── diagnose.md
+    │   ├── model-manager.md
+    │   ├── api-integration.md
+    │   └── doc-keeper.md
+    └── skills/                    # Claude Code skills (reusable workflows)
+        └── add-model/SKILL.md    # /add-model — model onboarding workflow
 ```
 
 ## Prerequisites
@@ -174,7 +179,8 @@ Available models (defined in `models.conf`):
 | `glm-flash-q8` | GLM-4.7 Flash Q8_0 | ~105 t/s | 128K | Quality reasoning, tools |
 | `glm-flash-exp` | GLM-4.7 Flash Q8_0 (experimental) | ~105 t/s | 128K | Experimental |
 | `gpt-oss-120b` | GPT-OSS 120B F16 | ~21 t/s | 128K | Deep reasoning, knowledge |
-| `qwen3-coder-q5` | Qwen3-Coder-Next UD-Q5_K_XL | ~28 t/s | 256K | Coding agents |
+| `qwen3-coder-ud-q5` | Qwen3-Coder-Next UD-Q5_K_XL | ~28 t/s | 256K | Coding agents |
+| `qwen3-next-ud-q5` | Qwen3-Next-80B-A3B UD-Q5_K_XL | ~28 t/s | 262K | General reasoning, ultra-long context |
 
 ### Model-specific notes
 

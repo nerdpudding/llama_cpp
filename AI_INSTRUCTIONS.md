@@ -48,17 +48,19 @@ For non-trivial changes, follow this order:
 ├── models/                           # GGUF model files (gitignored)
 │   ├── documentation/                # Model cards from HuggingFace
 │   │   ├── CANDIDATES/               # Model cards for potential future models
-│   │   │   ├── README_Qwen3-Next-80B-A3B-Instruct-GGUF.md
 │   │   │   ├── README_Nemotron-3-Nano-30B-A3B-GGUF.md
 │   │   │   ├── README_Devstral-Small-2-24B-Instruct-2512-GGUF.md
 │   │   │   ├── README_Ministral-3-14B-Instruct-2512-GGUF.md
 │   │   │   └── README_Ministral-3-14B-Reasoning-2512-GGUF.md
 │   │   ├── README_modelcard_GLM-4.7-Flash.md
 │   │   ├── README_modelcard_gpt-oss-120b-GGUF.md
-│   │   └── README_modelcard_qwen3_coder_next.md
+│   │   ├── README_modelcard_qwen3_coder_next.md
+│   │   └── README_Qwen3-Next-80B-A3B-Instruct-GGUF.md
 │   ├── GLM-4.7-Flash/
 │   ├── GPT-OSS-120b/
-│   └── Qwen3-Coder-Next/
+│   ├── Qwen3-Coder-Next/
+│   │   └── UD-Q5_K_XL/
+│   └── Qwen3-Next/
 │       └── UD-Q5_K_XL/
 ├── benchmarks/
 │   └── evalplus/                     # EvalPlus HumanEval+ benchmark pipeline
@@ -80,14 +82,16 @@ For non-trivial changes, follow this order:
 ├── archive/                          # Archived plans, old docs, superseded files
 ├── llama.cpp/                        # llama.cpp source (separate git repo, gitignored)
 └── .claude/
-    └── agents/                       # Claude Code specialized agents
-        ├── gpu-optimizer.md
-        ├── benchmark.md
-        ├── builder.md
-        ├── diagnose.md
-        ├── model-manager.md
-        ├── api-integration.md
-        └── doc-keeper.md
+    ├── agents/                       # Claude Code specialized agents
+    │   ├── gpu-optimizer.md
+    │   ├── benchmark.md
+    │   ├── builder.md
+    │   ├── diagnose.md
+    │   ├── model-manager.md
+    │   ├── api-integration.md
+    │   └── doc-keeper.md
+    └── skills/                       # Claude Code skills (reusable workflows)
+        └── add-model/SKILL.md        # /add-model — 8-phase model onboarding workflow
 ```
 
 ## GPU strategy
