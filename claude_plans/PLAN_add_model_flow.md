@@ -4,13 +4,26 @@
 
 The project has four production models with optimized GPU profiles, benchmarks, and comprehensive docs. Five candidate models are already in `models/documentation/CANDIDATES/`. Currently, adding a new model requires manual coordination across many files. This plan creates a clear, repeatable workflow that the user and AI agents can follow together to quickly integrate any new GGUF model.
 
-## The workflow (what we're documenting/setting up)
+## Approach: `/add-model` skill + updated agents
+
+The user triggers the workflow with `/add-model <candidate-name>`. The skill injects a structured step-by-step plan into the conversation, guiding Claude to use the right agent at each phase. The agents themselves are updated to know their role in this flow.
+
+**Why a skill, not just agents?**
+- Agents can't call other agents — orchestration must come from the main conversation
+- A skill ensures the same workflow every time, regardless of how the user phrases the request
+- The skill acts as a checklist; the agents do the actual work
+
+**Why not Agent Teams?**
+- The workflow is sequential (each step depends on the previous)
+- No parallelism to exploit — one model at a time
+
+## The workflow
 
 ### Prerequisites (user does this manually)
 
 1. **Find model on HuggingFace** — must be GGUF (for GPU/CPU offloading). Unsloth quants preferred for MoE (better router precision) but not required.
 2. **Download model card** — save the HuggingFace README as `README_<modelname>.md` in `models/documentation/CANDIDATES/`.
-3. **Start a new Claude Code session** and ask: "I want to evaluate candidate model X for integration."
+3. **Start a new Claude Code session** and run `/add-model <candidate-name>` or ask: "I want to add candidate model X."
 
 ### Phase 1: Evaluate (AI + user, uses model-manager agent)
 
@@ -124,33 +137,37 @@ doc-keeper verifies and updates all cross-references:
 | 7. Benchmark | benchmark | Run EvalPlus, generate report |
 | 8. Docs | doc-keeper | Cross-reference audit, update all docs |
 
-## What to implement now
+## What to implement
 
-### 1. Update todo_16_feb.md — expand Session 2
+### 1. Create `/add-model` skill
 
-Replace the current Session 2 block with a more detailed checklist that references this workflow.
+Create `.claude/skills/add-model/SKILL.md` — the orchestrator skill that:
+- Accepts a candidate name as argument
+- Lists the 8 phases with clear instructions
+- Tells Claude which agent to use at each step
+- Includes the file checklist for documentation updates
 
-### 2. Update agent instructions (if needed)
+### 2. Update agent instructions
 
-Review whether agents need updates to support this workflow:
-
-- **model-manager** (`/.claude/agents/model-manager.md`) — add explicit "new model evaluation" workflow steps; currently focused on download/organize but should also cover the evaluation phase (reading candidate cards, comparing quants, advising the user)
-- **gpu-optimizer** (`/.claude/agents/gpu-optimizer.md`) — already well-equipped; may need a note about creating profiles marked "NOT YET TESTED"
-- **benchmark** (`/.claude/agents/benchmark.md`) — needs review; check if it documents the full file checklist for adding a new bench profile (models.conf, bench-client.conf, generate-report.py, README.md)
+- **model-manager** (`.claude/agents/model-manager.md`) — add "evaluate candidate" workflow: read model card from CANDIDATES/, compare quant options, advise on fit for hardware, guide download
+- **gpu-optimizer** (`.claude/agents/gpu-optimizer.md`) — add "untested profile" convention: mark new profiles with "NOT YET TESTED", include estimated speed, document iteration flow
+- **benchmark** (`.claude/agents/benchmark.md`) — add file checklist for new bench profiles: models.conf, bench-client.conf, generate-report.py DISPLAY_NAMES + REFERENCE_MAP, evalplus README.md profiles table
 
 ### 3. Later: test the workflow with a candidate
 
-After the workflow is documented and agents updated, test it with one of the existing candidates. User picks which one. This is a separate session — not part of this implementation.
+After the skill and agents are set up, test with one of the existing candidates in `models/documentation/CANDIDATES/`. User picks which one. This is a separate session.
 
-## Files to modify
+## Files to create/modify
 
-1. `todo_16_feb.md` — expand Session 2 with detailed checklist
+1. **NEW:** `.claude/skills/add-model/SKILL.md` — orchestrator skill
 2. `.claude/agents/model-manager.md` — add evaluation workflow
-3. `.claude/agents/gpu-optimizer.md` — minor: add "untested profile" convention
-4. `.claude/agents/benchmark.md` — update with current pipeline file checklist
+3. `.claude/agents/gpu-optimizer.md` — add untested profile convention
+4. `.claude/agents/benchmark.md` — add new bench profile file checklist
+5. `todo_16_feb.md` — update Step 1 items
 
 ## Verification
 
-1. Read updated agents and verify they reference the correct files and workflows
-2. Run doc-keeper to check consistency
-3. Later (separate session): test the full workflow with a candidate model
+1. `/add-model` shows up as available skill in Claude Code
+2. Read updated agents and verify they reference the correct files and workflows
+3. Run doc-keeper to check consistency
+4. Later (separate session): test the full workflow with a candidate model
