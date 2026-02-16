@@ -49,7 +49,7 @@ All models are MoE. GPU placement uses optimized `-ot` regex configurations for 
 
 ### DGX Spark comparison article (concept)
 - Researched DGX Spark vs desktop for GPT-OSS 120B inference
-- Draft article in `docs/dgx-spark-comparison.md`, data archived in `archive/dgx-spark-benchmarks.md`
+- Draft article in `docs/dgx-spark-comparison.md`
 
 ### Streamlined model onboarding (2026-02-16)
 - `/add-model` skill with 8-phase guided workflow for evaluating and adding new GGUF models
