@@ -62,9 +62,10 @@ All models are MoE. GPU placement uses optimized `-ot` regex configurations for 
 
 ## Future
 
-### API integration with coding assistants
+### API integration with external tools
 - Configure Claude Code to use the local llama-server as an alternative backend
 - Test integration with Continue.dev, aider, and other coding assistants
+- Test integration with personal AI assistants like OpenClaw
 - Set up OpenAI-compatible client configurations for various tools
 - Define use cases: when local inference is worthwhile vs. cloud API
 - Goal: agents can be configured to use local models alongside cloud APIs (e.g. Claude for complex tasks, local model for simpler ones)
