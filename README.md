@@ -31,7 +31,6 @@ llama.cpp itself provides the inference engine, web UI, and API. Everything else
 - [Roadmap & Research](#roadmap--research)
 - [Documentation](#documentation)
 - [Repository Structure](#repository-structure)
-- [Why Custom llama.cpp?](#why-custom-llamacpp)
 - [Updating llama.cpp](#updating-llamacpp)
 
 ---
@@ -296,14 +295,6 @@ See [ROADMAP.md](ROADMAP.md) for current status, completed milestones, and futur
     └── skills/                    # Claude Code skills (reusable workflows)
         └── add-model/SKILL.md    # /add-model — model onboarding workflow
 ```
-
-## Why Custom llama.cpp?
-
-Ollama doesn't support the features needed for this hardware and these models:
-
-- **`-ot` tensor overrides** — Regex-based per-layer GPU/CPU placement is essential for running 60-80 GB MoE models across 40 GB of split VRAM. Ollama has no equivalent.
-- **Hardware-specific build** — CUDA 13.0 with `sm_89;sm_120` targeting both Ada and Blackwell architectures. Ollama ships a generic binary.
-- **Latest features** — DeltaNet kernels, `--fit` auto-VRAM, disaggregated prompt processing for MoE — features that arrive in llama.cpp master weeks before (if ever) in Ollama.
 
 ## Updating llama.cpp
 
