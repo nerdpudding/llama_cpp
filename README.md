@@ -10,7 +10,7 @@ So I went back to [llama.cpp](https://github.com/ggml-org/llama.cpp) — a high-
 - **Model selector** (`start.sh`) — interactive menu to pick a model, each with its own optimized GPU layer split, sampler defaults, and context size stored in `models.conf`
 - **Monitoring dashboard** (`dashboard.py`) — curses TUI showing server logs, per-GPU VRAM/utilization/temperature, and system stats while a model runs
 - **Benchmarking** — EvalPlus HumanEval+ runner to compare local models against each other and against proprietary references
-- **Model onboarding** — `/add-model` skill with agent-assisted workflow for evaluating, configuring, and benchmarking new models
+- **Model onboarding** — `/add-model` skill with agent-assisted workflow for evaluating, configuring, and benchmarking new models (built for [Claude Code](https://claude.com/claude-code), but the approach could be adapted for other AI-assisted development tools)
 - **Documentation** — GPU placement strategies, sampler settings per model, lessons learned, and hardware comparison research
 
 llama.cpp itself provides the inference engine, web UI, and API. Everything else listed above is part of this wrapper. The goal is simple: get the most out of my hardware in terms of model quality, speed, and context length.
@@ -172,7 +172,7 @@ Full setup and usage: [benchmarks/evalplus/README.md](benchmarks/evalplus/README
 
 ## Adding New Models
 
-The `/add-model` skill provides a guided 8-phase workflow for evaluating and adding new GGUF models:
+The `/add-model` skill provides a guided 8-phase workflow for evaluating and adding new GGUF models. **This is built for [Claude Code](https://claude.com/claude-code)** and uses its agents and skills system, but the workflow pattern (evaluate → configure → test → benchmark → document) could be adapted for other AI-assisted development tools.
 
 1. **Evaluate** — Analyze architecture, quant options, VRAM fit (model-manager agent)
 2. **Download** — User downloads files to `models/<dir>/`
