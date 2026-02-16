@@ -69,6 +69,16 @@ All models are MoE. GPU placement uses optimized `-ot` regex configurations for 
 - Automated VRAM utilization tracking during benchmarks
 - Regression testing when updating llama.cpp
 
+## Candidate Models
+
+Five models are being evaluated for potential addition to the project. Model cards are in `models/documentation/CANDIDATES/`.
+
+- **Qwen3-Next-80B-A3B-Instruct** — 80B total / 3B active MoE with hybrid Gated DeltaNet + Gated Attention, ultra-long context (256K native, extensible to 1M), strong general reasoning and coding
+- **Nemotron-3-Nano-30B-A3B** — 30B total / 3.5B active hybrid Mamba2-Transformer MoE, reasoning with tool calling, excels at math/coding/agentic tasks (SWE-bench 38.8%)
+- **Devstral-Small-2-24B-Instruct** — 24B dense model specialized for agentic coding and software engineering (SWE-bench 68.0%, Terminal Bench 22.5%), supports vision
+- **Ministral-3-14B-Instruct** — 14B (13.5B LM + 0.4B vision encoder), general-purpose instruct with vision, multilingual, edge-optimized
+- **Ministral-3-14B-Reasoning** — Same architecture as 14B Instruct but post-trained for reasoning with `<think>` blocks, strong at math/STEM (AIME25 85.0%)
+
 ## Considered & Deferred
 
 ### DGX Spark

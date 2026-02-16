@@ -47,6 +47,12 @@ For non-trivial changes, follow this order:
 │   └── lessons_learned.md              # Mistakes made and prevention rules
 ├── models/                           # GGUF model files (gitignored)
 │   ├── documentation/                # Model cards from HuggingFace
+│   │   ├── CANDIDATES/               # Model cards for potential future models
+│   │   │   ├── README_Qwen3-Next-80B-A3B-Instruct-GGUF.md
+│   │   │   ├── README_Nemotron-3-Nano-30B-A3B-GGUF.md
+│   │   │   ├── README_Devstral-Small-2-24B-Instruct-2512-GGUF.md
+│   │   │   ├── README_Ministral-3-14B-Instruct-2512-GGUF.md
+│   │   │   └── README_Ministral-3-14B-Reasoning-2512-GGUF.md
 │   │   ├── README_modelcard_GLM-4.7-Flash.md
 │   │   ├── README_modelcard_gpt-oss-120b-GGUF.md
 │   │   └── README_modelcard_qwen3_coder_next.md
