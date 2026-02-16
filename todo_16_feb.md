@@ -32,15 +32,19 @@ Plan: `claude_plans/first_assignment_16_feb.md`
 
 ## Carried over from 15 Feb
 
-### Production profile optimization
-- [ ] Analyze benchmark results, choose models
-- [ ] Optimize production profiles with gpu-optimizer agent (GLM Q4, GLM Q8, Qwen3 Q5, Qwen3 Q6, Qwen3 Q6K)
-- [ ] GPT-OSS 120B production profile already optimized — skip
-- [ ] Test and document
+### Production profile optimization — DONE (16 feb)
+- [x] Analyzed benchmark results, chose UD-Q5 over UD-Q6 (faster + higher score)
+- [x] Optimized all production profiles with gpu-optimizer agent + manual testing
+- [x] GPT-OSS 120B also optimized (-ub 512 freed room for +1 layer)
+- [x] Tested and documented all results in advice_test_plan.md
+- [x] Key discovery: -ub 512 saves 449-2000 MiB compute buffer vs -ub 1024/2048
+- Results: GLM Q4 142.7 t/s, GLM Q8 103.8 t/s, GPT-OSS 20.7 t/s, Qwen3 Q5 27.9 t/s
 
 ### Plans archived
 - [x] Archived `PLAN_fair_postprocessing_benchmark.md` → `archive/` (done 15 feb)
 - [x] Archived `PLAN_separation_of_concerns.md` → `archive/` (done 15 feb)
+- [x] Archived `PLAN_bench_gpu_optimization.md` → `archive/` (done 16 feb)
+- [x] Archived `advice_test_plan.md` → `archive/` (done 16 feb)
 
 ## Session 2: New model (separate session after Session 1)
 
