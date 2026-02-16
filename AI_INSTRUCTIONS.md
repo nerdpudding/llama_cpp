@@ -59,9 +59,7 @@ For non-trivial changes, follow this order:
 │   ├── GLM-4.7-Flash/
 │   ├── GPT-OSS-120b/
 │   └── Qwen3-Coder-Next/
-│       ├── Q6_K/
-│       ├── UD-Q5_K_XL/
-│       └── UD-Q6_K_XL/
+│       └── UD-Q5_K_XL/
 ├── benchmarks/
 │   └── evalplus/                     # EvalPlus HumanEval+ benchmark pipeline
 │       ├── README.md                 # ** Detailed benchmark docs — read this for benchmark work **

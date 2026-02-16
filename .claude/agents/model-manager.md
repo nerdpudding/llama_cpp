@@ -32,9 +32,7 @@ models/
 ├── GPT-OSS-120b/
 │   └── gpt-oss-120b-F16.gguf        (61 GB, MoE 116.8B)
 └── Qwen3-Coder-Next/
-    ├── Q6_K/                          (~66 GB, MoE 80B)
-    ├── UD-Q5_K_XL/                    (~57 GB, MoE 80B)
-    └── UD-Q6_K_XL/                    (~64 GB, MoE 80B)
+    └── UD-Q5_K_XL/                    (~57 GB, MoE 80B)
 ```
 
 Multi-part GGUF files (split into -00001, -00002, etc.) must stay in the same directory.

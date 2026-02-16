@@ -4,7 +4,7 @@
 #
 # Usage:
 #   ./start.sh              # Interactive menu + monitoring dashboard
-#   ./start.sh qwen3-coder  # Direct launch by section ID
+#   ./start.sh glm-flash-q4  # Direct launch by section ID
 #   ./start.sh --list       # List available models
 #   ./start.sh --no-dashboard  # Launch without dashboard (raw logs)
 # =============================================================================
@@ -70,16 +70,41 @@ ctx_label() {
 }
 
 list_models() {
-    echo "Available models:"
+    local prod_ids=() bench_ids=()
+    for id in "${SECTION_IDS[@]}"; do
+        if [[ "$id" == bench-* ]]; then
+            bench_ids+=("$id")
+        else
+            prod_ids+=("$id")
+        fi
+    done
+
+    echo "Production models:"
     echo ""
-    for i in "${!SECTION_IDS[@]}"; do
-        local id="${SECTION_IDS[$i]}"
-        local name="${SECTION_NAMES[$i]}"
+    for id in "${prod_ids[@]}"; do
+        local name; name=$(get "$id" NAME)
         local ctx; ctx=$(get "$id" CTX_SIZE)
+        local speed; speed=$(get "$id" SPEED)
+        local desc; desc=$(get "$id" DESCRIPTION)
         printf "  %-20s  %s" "$id" "$name"
+        [[ -n "$speed" ]] && printf "  %s" "$speed"
         [[ -n "$ctx" ]] && printf "  (%s)" "$(ctx_label "$ctx")"
         printf "\n"
+        [[ -n "$desc" ]] && printf "  %-20s  %s\n" "" "$desc"
     done
+
+    if [[ ${#bench_ids[@]} -gt 0 ]]; then
+        echo ""
+        echo "Benchmark profiles:"
+        echo ""
+        for id in "${bench_ids[@]}"; do
+            local name; name=$(get "$id" NAME)
+            local ctx; ctx=$(get "$id" CTX_SIZE)
+            printf "  %-20s  %s" "$id" "$name"
+            [[ -n "$ctx" ]] && printf "  (%s)" "$(ctx_label "$ctx")"
+            printf "\n"
+        done
+    fi
 }
 
 # --- Prerequisite checks ---------------------------------------------------
@@ -145,14 +170,81 @@ Download it first, then try again."
 # --- Menu -------------------------------------------------------------------
 
 show_menu() {
+    # Split into production and benchmark profiles
+    local prod_ids=() bench_ids=()
+    for id in "${SECTION_IDS[@]}"; do
+        if [[ "$id" == bench-* ]]; then
+            bench_ids+=("$id")
+        else
+            prod_ids+=("$id")
+        fi
+    done
+
     echo "" >&2
     echo "llama.cpp Model Selector" >&2
     echo "========================" >&2
     echo "" >&2
 
-    for i in "${!SECTION_IDS[@]}"; do
-        local id="${SECTION_IDS[$i]}"
-        local name="${SECTION_NAMES[$i]}"
+    for i in "${!prod_ids[@]}"; do
+        local id="${prod_ids[$i]}"
+        local name; name=$(get "$id" NAME)
+        local ctx; ctx=$(get "$id" CTX_SIZE)
+        local speed; speed=$(get "$id" SPEED)
+        local desc; desc=$(get "$id" DESCRIPTION)
+        local label=""
+        [[ -n "$ctx" ]] && label=$(ctx_label "$ctx")
+
+        # Right-align speed + context
+        local right=""
+        [[ -n "$speed" ]] && right="${speed}  ${label}" || right="$label"
+        printf "  %d) %-44s %s\n" "$((i + 1))" "$name" "$right" >&2
+
+        # Description on next line (indented)
+        [[ -n "$desc" ]] && printf "     %-44s\n" "$desc" >&2
+    done
+
+    echo "" >&2
+    [[ ${#bench_ids[@]} -gt 0 ]] && echo "  b) Benchmarks >" >&2
+    echo "  q) Quit" >&2
+    echo "" >&2
+
+    local count=${#prod_ids[@]}
+    while true; do
+        read -rp "Select model [1-${count}, b, q]: " choice
+        if [[ "$choice" == "q" || "$choice" == "Q" ]]; then
+            echo "Aborted." >&2
+            exit 0
+        fi
+        if [[ "$choice" == "b" || "$choice" == "B" ]] && [[ ${#bench_ids[@]} -gt 0 ]]; then
+            local bench_result
+            bench_result=$(show_bench_menu "${bench_ids[@]}")
+            if [[ "$bench_result" == "__back__" ]]; then
+                # Return to main menu — re-display
+                show_menu
+                return
+            fi
+            echo "$bench_result"
+            return
+        fi
+        if [[ "$choice" =~ ^[0-9]+$ ]] && (( choice >= 1 && choice <= count )); then
+            echo "${prod_ids[$((choice - 1))]}"
+            return
+        fi
+        echo "Invalid choice. Enter 1-${count}, b, or q to quit." >&2
+    done
+}
+
+show_bench_menu() {
+    local bench_ids=("$@")
+
+    echo "" >&2
+    echo "Benchmark Profiles (10K context, optimized GPU layers)" >&2
+    echo "======================================================" >&2
+    echo "" >&2
+
+    for i in "${!bench_ids[@]}"; do
+        local id="${bench_ids[$i]}"
+        local name; name=$(get "$id" NAME)
         local ctx; ctx=$(get "$id" CTX_SIZE)
         local label=""
         [[ -n "$ctx" ]] && label=$(ctx_label "$ctx")
@@ -160,21 +252,26 @@ show_menu() {
     done
 
     echo "" >&2
+    echo "  r) Return to main menu" >&2
     echo "  q) Quit" >&2
     echo "" >&2
 
-    local count=${#SECTION_IDS[@]}
+    local count=${#bench_ids[@]}
     while true; do
-        read -rp "Select model [1-${count}]: " choice
+        read -rp "Select benchmark [1-${count}, r, q]: " choice
         if [[ "$choice" == "q" || "$choice" == "Q" ]]; then
             echo "Aborted." >&2
             exit 0
         fi
-        if [[ "$choice" =~ ^[0-9]+$ ]] && (( choice >= 1 && choice <= count )); then
-            echo "${SECTION_IDS[$((choice - 1))]}"
+        if [[ "$choice" == "r" || "$choice" == "R" ]]; then
+            echo "__back__"
             return
         fi
-        echo "Invalid choice. Enter 1-${count} or q to quit." >&2
+        if [[ "$choice" =~ ^[0-9]+$ ]] && (( choice >= 1 && choice <= count )); then
+            echo "${bench_ids[$((choice - 1))]}"
+            return
+        fi
+        echo "Invalid choice. Enter 1-${count}, r, or q to quit." >&2
     done
 }
 

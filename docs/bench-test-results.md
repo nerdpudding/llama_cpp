@@ -3,6 +3,10 @@
 Tested 2026-02-15. All profiles use CTX_SIZE=10240, -b 512 -ub 512 (except GLM Q4
 which uses default batch size), --cache-type-k q8_0 --cache-type-v q8_0.
 
+> **Note:** UD-Q6_K_XL was removed from `models.conf` on 2026-02-16 after benchmarks
+> showed UD-Q5_K_XL is both faster (30 vs 24 t/s) and higher scoring (93.9% vs 92.1%
+> HumanEval). UD-Q6 data below is historical.
+
 ## Hardware
 
 - CUDA0: RTX 4090 (24 GB) — nothing else running
