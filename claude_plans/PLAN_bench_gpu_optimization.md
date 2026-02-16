@@ -154,11 +154,40 @@ configurations benchmarked.
 Bench profiles are fully optimized and benchmarked. Production profiles still
 need review and optimization for the following models:
 
-- [ ] GLM-4.7 Flash Q4_K_M — review if current FIT=on is optimal
-- [ ] GLM-4.7 Flash Q8_0 — review layer split, may benefit from explicit -ot
-- [ ] Qwen3-Coder-Next UD-Q5_K_XL — check if current 15+7 split can be improved
-- [ ] Qwen3-Coder-Next UD-Q6_K_XL — check if current 13+6 split can be improved
-- [ ] Qwen3-Coder-Next Q6_K — check if current split can be improved
+- [ ] GLM-4.7 Flash Q4_K_M — FIT=on, 128K context, review if explicit -ot is better
+- [ ] GLM-4.7 Flash Q8_0 — FIT=on, 128K context, review layer split, may benefit from explicit -ot
+- [ ] GLM-4.7 Flash Q8_0 (experimental) — FIT=on, 128K context, same as Q8 but different model file
+- [ ] Qwen3-Coder-Next UD-Q5_K_XL — 15+7=22/48, 256K context, -b 2048 -ub 2048
 
-**Exception:** GPT-OSS 120B production profile is already optimized (12+4=16/36,
-64K context). No changes needed.
+**Dropped:** Qwen3-Coder-Next UD-Q6_K_XL and Q6_K (non-UD) removed from
+production optimization. Benchmark results show UD-Q5 is both faster (25.8 vs
+21.4 t/s) and scores higher (93.9% vs 92.1% HumanEval, 90.9% vs 89.0%
+HumanEval+). No reason to optimize profiles for models that are strictly
+inferior on every metric. UD-Q6 profiles remain in models.conf for reference
+but are not a priority.
+
+**Exception:** GPT-OSS 120B production profile is already optimized (11+3=14/36,
+128K context, -b 2048 -ub 2048). No changes needed.
+
+### Current production profiles (from models.conf)
+
+| Model | CTX_SIZE | Batch | GPU layers | FIT | Strategy |
+|-------|----------|-------|-----------|-----|----------|
+| GLM Q4_K_M | 131072 | default | 99 (all) | on | auto-distribute |
+| GLM Q8_0 | 131072 | default | 99 (all) | on | auto-distribute |
+| GLM Q8_0 exp | 131072 | default | 99 (all) | on | auto-distribute |
+| GPT-OSS 120B | 131072 | -b 2048 -ub 2048 | 99 | off | 11 CUDA0 + 3 CUDA1 + CPU |
+| Qwen3 UD-Q5 | 262144 | -b 2048 -ub 2048 | 99 | off | 15 CUDA0 + 7 CUDA1 + CPU |
+
+### Optimization workflow
+
+1. **gpu-optimizer agent** analyzes current profiles vs bench profiles, considers
+   production context sizes, and produces `advice_test_plan.md` with 2 suggestions
+   per model: one aggressive (max GPU layers) and one moderate (safer margin).
+2. **User tests** each suggestion manually via `./start.sh`, recording VRAM usage,
+   speed measurements, OOM results, and split logs into `advice_test_plan.md`.
+3. **gpu-optimizer agent** analyzes test results and picks the final optimal
+   configuration for each model.
+4. **Update models.conf** with the chosen profiles.
+5. **doc-keeper agent** updates documentation to reflect any changes.
+6. **Commit** all changes.
