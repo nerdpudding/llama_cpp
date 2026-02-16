@@ -138,7 +138,7 @@ After changes that affect an agent's domain, update that agent's instructions.
 
 ## Plan rules
 
-Plans are stored in: **`/home/rvanpolen/vibe_claude_kilo_cli_exp/llama_cpp/claude_plans/`**
+Plans are stored in: **`claude_plans/`**
 
 1. **Always save plans as files** — plans must be persistent, never just in conversation.
 2. **Use logical names** — e.g. `PLAN_fair_postprocessing_benchmark.md`. If plan mode generates a random name, rename it immediately.
@@ -147,7 +147,7 @@ Plans are stored in: **`/home/rvanpolen/vibe_claude_kilo_cli_exp/llama_cpp/claud
 
 ## Archive rules
 
-Everything goes to: **`/home/rvanpolen/vibe_claude_kilo_cli_exp/llama_cpp/archive/`**
+Everything goes to: **`archive/`**
 
 - Completed plans (from `claude_plans/`)
 - Superseded documentation

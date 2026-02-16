@@ -14,7 +14,7 @@ The project has 7 model configs but no formal coding benchmarks and some models 
 
 ## Step 1: Update sampler settings in `models.conf`
 
-**File:** `/home/rvanpolen/vibe_claude_kilo_cli_exp/llama_cpp/models.conf`
+**File:** `models.conf`
 
 Based on official model card recommendations and Unsloth docs:
 
