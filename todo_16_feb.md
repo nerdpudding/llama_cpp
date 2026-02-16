@@ -46,9 +46,32 @@ Plan: `claude_plans/first_assignment_16_feb.md`
 - [x] Archived `PLAN_bench_gpu_optimization.md` → `archive/` (done 16 feb)
 - [x] Archived `advice_test_plan.md` → `archive/` (done 16 feb)
 
-## Session 2: New model (separate session after Session 1)
+### Use cases, menu improvements, UD-Q6 removal — DONE (16 feb)
+- [x] Removed UD-Q6 (production + bench profiles) — UD-Q5 is faster and higher scoring
+- [x] Added DESCRIPTION/SPEED fields to all production profiles in models.conf
+- [x] Rewrote start.sh menu with descriptions, speeds, and bench submenu
+- [x] Added capability + sampler quick-reference tables to client-settings.md
+- [x] Added GPT-OSS reasoning level documentation (low/medium/high trade-offs)
+- [x] Fixed GPT-OSS context from 64K to 128K in docs
+- [x] Updated all cross-references (README, ROADMAP, AI_INSTRUCTIONS, evalplus, agents)
+- [x] Archived plan → `archive/2026-02-16_model_usecases_menu_improvements.md`
 
-- [ ] Add new model — create normal and bench profiles
-- [ ] Test the new model
-- [ ] Benchmark the new model
-- [ ] Add results to REPORT.md
+## Session 2: Add new model (separate session)
+
+Plan: `claude_plans/PLAN_add_model_flow.md`
+
+### Step 1: Set up "add model" workflow
+- [ ] Update model-manager agent with evaluation workflow
+- [ ] Update gpu-optimizer agent with "untested profile" convention
+- [ ] Update benchmark agent with current pipeline file checklist
+- [ ] Update todo with Session 2 completion
+
+### Step 2: Test the workflow with a candidate (user picks which one)
+- [ ] Evaluate candidate model card
+- [ ] Download model and organize files
+- [ ] Create production profile (gpu-optimizer)
+- [ ] Find and document sampler settings
+- [ ] Test and optimize (user runs, shares logs)
+- [ ] Create bench profile (optional)
+- [ ] Run benchmark (optional)
+- [ ] Update all documentation (doc-keeper)
