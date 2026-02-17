@@ -111,11 +111,13 @@ Results auto-generated in `results/REPORT.md`. Use the **benchmark** agent to he
 
 ## Phase 8: Update documentation (doc-keeper agent)
 
+**If the model card was in `models/documentation/CANDIDATES/`**, move it to `models/documentation/` now — the model has graduated from candidate to active.
+
 Use the **doc-keeper** agent to verify and update all cross-references:
 
 **Checklist of files to verify:**
-- [ ] `README.md` — Target Models table, Switching Models table, Repository Structure
-- [ ] `AI_INSTRUCTIONS.md` — project hierarchy (if new directories created)
+- [ ] `README.md` — Models table, Candidate models table (remove if graduated), Repository Structure
+- [ ] `AI_INSTRUCTIONS.md` — project hierarchy (model card location, new directories)
 - [ ] `ROADMAP.md` — Current Status section
 - [ ] `docs/client-settings.md` — capability table, sampler table, per-model section
 - [ ] `docs/gpu-strategy-guide.md` — model reference table (if applicable)
