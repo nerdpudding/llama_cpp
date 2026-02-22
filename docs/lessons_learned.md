@@ -157,3 +157,34 @@ Never write `-b X -ub X` with the same value. See `docs/gpu-strategy-guide.md`
 5. **Test and measure.** After making changes, verify with actual load logs
    and `nvidia-smi`. Check that model buffers, KV cache, and compute buffers
    are on the expected devices.
+
+6. **Test llama.cpp updates with real workloads before committing.** A
+   successful build and a short prompt don't prove correctness. Always test
+   with longer prompts (100+ tokens) on all model types and GPU configurations
+   before declaring an update safe. See lesson #6 below.
+
+---
+
+## 6. Updated llama.cpp without testing multi-GPU inference with real prompts
+
+**What happened:** Pulled 93 new commits from llama.cpp upstream, rebuilt,
+tested with a 20-token prompt via curl — worked fine. Started the benchmark
+(164 HumanEval problems) and it crashed immediately. Every request with 100+
+tokens caused `CUDA error: an illegal memory access was encountered` on the
+first generated token. Both Qwen3-Next and Qwen3-Coder-Next were affected.
+
+**Root cause:** A regression in the new upstream code that breaks qwen3next
+model inference with `-ot` multi-GPU tensor splits. Prompt processing
+succeeds, but the first decode step crashes. Short prompts (<~100 tokens)
+happen to work, which masked the issue during manual testing.
+
+**Resolution:** Reverted to previous commit (`b48e80f67`, b8022, 2026-02-13),
+rebuilt, verified all models work. Filed upstream:
+https://github.com/ggml-org/llama.cpp/issues/19816.
+Similar issue was previously reported as #18580 and fixed by PR #18593.
+
+**Prevention rule:** When updating llama.cpp, always test with:
+1. A short prompt (smoke test — does it load?)
+2. A long prompt (100+ tokens — does inference actually work?)
+3. All model architectures that use `-ot` multi-GPU splits
+4. Only then consider the update safe

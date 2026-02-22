@@ -143,17 +143,18 @@ Full details and rationale: [docs/client-settings.md](docs/client-settings.md)
 
 Coding benchmark: 164 Python problems (HumanEval+), pass@1, greedy decoding. HumanEval+ uses 80x more tests than standard HumanEval.
 
-### Local results (2026-02-15)
+### Local results (2026-02-23)
 
 | # | Model | HumanEval | HumanEval+ | vs published |
 |---|-------|-----------|------------|--------------|
 | 1 | Claude Opus 4.6 | 98.2% | 95.1% | +4.0pp |
 | 2 | Claude Opus 4.6 (thinking) | 99.4% | 93.9% | +5.2pp |
-| 3 | Qwen3-Coder-Next UD-Q5_K_XL | 93.9% | 90.9% | -0.2pp |
-| 4 | Qwen3-Coder-Next UD-Q6_K_XL | 92.1% | 89.0% | -2.0pp |
-| 5 | GLM-4.7 Flash Q8_0 * | 89.0% | 87.2% | +2.0pp |
-| 6 | GPT-OSS 120B F16 | 93.3% | 87.2% | +5.0pp |
-| 7 | GLM-4.7 Flash Q4_K_M * | 87.8% | 83.5% | +0.8pp |
+| 3 | Qwen3-Next UD-Q5_K_XL | 98.2% | 93.9% | — |
+| 4 | Qwen3-Coder-Next UD-Q5_K_XL | 93.9% | 90.9% | -0.2pp |
+| 5 | Qwen3-Coder-Next UD-Q6_K_XL | 92.1% | 89.0% | -2.0pp |
+| 6 | GLM-4.7 Flash Q8_0 * | 89.0% | 87.2% | +2.0pp |
+| 7 | GPT-OSS 120B F16 | 93.3% | 87.2% | +5.0pp |
+| 8 | GLM-4.7 Flash Q4_K_M * | 87.8% | 83.5% | +0.8pp |
 
 **"vs published"** = difference in HumanEval score compared to the closest published reference score for that model (from model cards, [EvalPlus leaderboard](https://evalplus.github.io/leaderboard.html), or benchmark articles). Not always an exact apples-to-apples comparison — see [REPORT.md](benchmarks/evalplus/results/REPORT.md) for full details, reference sources, and caveats.
 
