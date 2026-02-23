@@ -8,14 +8,14 @@ So I went back to [llama.cpp](https://github.com/ggml-org/llama.cpp) — a high-
 
 - **Dockerized build** — compiles llama.cpp from source with hardware-specific CUDA flags, making the setup reproducible and isolated
 - **Model selector** (`start.sh`) — interactive menu to pick a model, each with its own optimized GPU layer split, sampler defaults, and context size stored in `models.conf`
-- **Monitoring dashboard** (`dashboard.py`) — curses TUI showing server logs, per-GPU VRAM/utilization/temperature, and system stats while a model runs
+- **Monitoring dashboard** (`dashboard.py`) — curses TUI showing server logs, per-GPU VRAM/utilization/temperature, and system stats while a model runs; includes an in-dashboard model picker (`m` key) and a management API on port 8081 for switching models programmatically
 - **Benchmarking** — EvalPlus HumanEval+ runner to compare local models against each other and against proprietary references
 - **Model onboarding** — `/add-model` skill with agent-assisted workflow for evaluating, configuring, and benchmarking new models (built for [Claude Code](https://claude.com/claude-code), but the approach could be adapted for other AI-assisted development tools)
 - **Documentation** — GPU placement strategies, sampler settings per model, lessons learned, and hardware comparison research
 
 llama.cpp itself provides the inference engine, web UI, and API. Everything else listed above is part of this wrapper. The goal is simple: get the most out of my hardware in terms of model quality, speed, and context length.
 
-**What's next:** Since the API is OpenAI-compatible, this setup can serve as a local backend for coding assistants like Claude Code, Continue.dev, and aider, personal AI assistants like [OpenClaw](https://github.com/openclaw/openclaw), or any other tool that speaks the OpenAI API — using your own hardware instead of (or alongside) cloud APIs. That integration is the main next step. Beyond that: additional benchmarks for tasks beyond coding, and a way to switch models on the fly from API clients or agents without manually restarting the server. See the [Roadmap](ROADMAP.md) for details.
+**What's next:** Since the API is OpenAI-compatible, this setup can serve as a local backend for coding assistants like Claude Code, Continue.dev, and aider, personal AI assistants like [OpenClaw](https://github.com/openclaw/openclaw), or any other tool that speaks the OpenAI API — using your own hardware instead of (or alongside) cloud APIs. That integration is the main next step. Model switching is already available — the management API (`POST /switch` on port 8081) lets agents and external tools switch the active model programmatically. See the [Roadmap](ROADMAP.md) for details.
 
 **Who is this for?** Anyone interested in llama.cpp, GPU utilization strategies for local inference, and also to some extent: how to use Claude Code agents and skills to develop and maintain a project like this. It's also a working reference for how different model architectures (MoE vs dense) need different GPU placement strategies, and includes documentation on those trade-offs. **However — this is not a plug-and-play installer.** The Docker build **compiles llama.cpp for specific GPU architectures** (sm_89 + sm_120), and **all model configurations are tuned and tested for my exact hardware**. You can absolutely adapt it to your own setup, but you'll need to **adjust GPU layers, tensor overrides, and possibly build flags**. The detailed docs are there to help with that.
 
@@ -93,11 +93,13 @@ It generates `.env`, starts the container, waits for the server to be ready, and
 **Dashboard controls:**
 - **`q`** — Stop the server and exit
 - **`r`** — Stop the server and return to the model menu
+- **`m`** — Open model picker (switch models without leaving the dashboard)
 - **`Up/Down/PgUp/PgDn`** — Scroll server logs
 
 **Access:**
 - **Web UI:** http://localhost:8080 — llama.cpp's built-in chat interface
 - **API:** http://localhost:8080/v1/chat/completions
+- **Management API:** http://localhost:8081 — model switching for agents and external tools (`GET /models`, `GET /status`, `POST /switch`)
 
 ![llama.cpp built-in web UI](docs/screenshots/llama_cpp_UI.jpeg)
 

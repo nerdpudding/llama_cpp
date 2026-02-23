@@ -34,7 +34,7 @@ For non-trivial changes, follow this order:
 ├── ROADMAP.md                        # Future plans and status
 ├── models.conf                       # SERVER config (model, GPU layers, context, flags)
 ├── start.sh                          # Interactive model selector → .env → dashboard
-├── dashboard.py                      # Terminal monitoring TUI (curses)
+├── dashboard.py                      # Terminal monitoring TUI (curses) — model picker (m key), switch_model(), management API port 8081
 ├── Dockerfile                        # Multi-stage build (CUDA 13.0, sm_89+sm_120)
 ├── docker-compose.yml                # Production compose file
 ├── docker-compose.example.yml        # Annotated template with usage instructions
@@ -116,7 +116,9 @@ See also: `docs/lessons_learned.md` for common mistakes and prevention rules.
 |------|-------|---------|
 | `models.conf` | Server | How llama-server starts: MODEL, CTX_SIZE, N_GPU_LAYERS, FIT, EXTRA_ARGS |
 | `bench-client.conf` | Client (benchmarks) | What the benchmark client sends to the API: system prompts, reasoning levels |
-| `.env` | Generated | Auto-generated from models.conf by start.sh / benchmark.sh — never edit manually |
+| `.env` | Generated | Auto-generated from models.conf by start.sh / dashboard.py — never edit manually |
+
+**Management API** (dashboard.py, port 8081): `GET /models` — list profiles; `GET /status` — current model and state; `POST /switch {"model": "profile-id"}` — switch model programmatically. The API blocks on POST /switch until the new model is healthy (max 300s). Only available when the dashboard is running.
 
 **Separation of concerns:** `models.conf` = server startup config. Client-side settings (system prompts, reasoning levels) go in `bench-client.conf` for benchmarks or are set in the client UI/API for interactive use. Never mix them.
 

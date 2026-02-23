@@ -355,6 +355,8 @@ run_with_dashboard() {
     python3 "$DASHBOARD" \
         --compose-file "$COMPOSE_FILE" \
         --model-name "$model_name" \
+        --models-conf "$CONF" \
+        --current-profile "$selected" \
     || rc=$?
 
     # Remove trap — we handle cleanup ourselves from here

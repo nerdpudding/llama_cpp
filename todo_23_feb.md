@@ -7,12 +7,12 @@ optimized per-model GPU configs. The wrapper should make the complex `-ot`
 setup feel simple to use.
 
 ### Requirements
-- [ ] Make a plan: research current dashboard/container coupling, explore
+- [x] Make a plan: research current dashboard/container coupling, explore
       options (llama-server load/unload API vs container restart), define
       requirements, write implementation plan
-- [ ] Implement model switching
-- [ ] Decouple dashboard from container lifecycle (survives model switches)
-- [ ] Test manually: switch between models from dashboard, verify GPU
+- [x] Implement model switching
+- [x] Decouple dashboard from container lifecycle (survives model switches)
+- [x] Test manually: switch between models from dashboard, verify GPU
       placement and speed are correct per model
 
 ### Design constraints

@@ -12,9 +12,22 @@ Five models are configured in `models.conf` and selectable via `./start.sh` on a
 
 All models are MoE. GPU placement uses optimized `-ot` regex configurations for per-layer tensor placement. See `docs/gpu-strategy-guide.md` for the decision tree and `docs/bench-test-results.md` for measured performance data. Latest EvalPlus HumanEval+ scores are in `benchmarks/evalplus/results/REPORT.md`.
 
-**Monitoring dashboard:** `start.sh` now launches the container in the background, waits for server health, and opens a Python curses TUI (`dashboard.py`) with four panels: server logs (scrollable), per-GPU VRAM/utilization/power/temp monitoring, system stats (CPU/RAM/swap/container), and keyboard controls (`q` stop & exit, `r` stop & return to menu). Docker healthcheck is also configured for container-level health awareness. Use `--no-dashboard` for raw log output.
+**Monitoring dashboard:** `start.sh` launches the container in the background, waits for server health, and opens a Python curses TUI (`dashboard.py`) with four panels: server logs (scrollable), per-GPU VRAM/utilization/power/temp monitoring, system stats (CPU/RAM/swap/container), and keyboard controls (`q` stop & exit, `r` stop & return to menu, `m` open model picker). The dashboard survives container restarts — model switching happens inside the TUI without returning to the shell. A management API runs on port 8081 (`GET /models`, `GET /status`, `POST /switch`) for programmatic model switching by agents and external tools. Use `--no-dashboard` for raw log output.
 
 ## Done
+
+### Model switching from dashboard and management API (2026-02-23)
+- Model picker overlay in dashboard (press `m`) — arrow keys + Enter to select, `Esc` to cancel
+- `switch_model()` method: stops container, regenerates `.env` from selected profile, starts new container, reconnects log stream, polls health
+- Dashboard survives container restarts — TUI stays running throughout the switch
+- Log buffer persists: old model logs remain scrollable, separator line added between models
+- Server state tracking: idle / starting / running / stopping, shown in control bar
+- Management API on port 8081 (stdlib `http.server`, no dependencies):
+  - `GET /models` — list all profiles with current active model marked
+  - `GET /status` — current model, server state, status message
+  - `POST /switch` — switch model by profile ID, blocks until healthy (or 300s timeout)
+- `start.sh` passes `--models-conf` and `--current-profile` to dashboard.py
+- Plan: `claude_plans/PLAN_model_switching.md`
 
 ### Formal benchmarks (EvalPlus HumanEval+)
 - EvalPlus benchmark runner in `benchmarks/evalplus/` — runs HumanEval+ (164 Python problems) against all models via the llama.cpp OpenAI API
@@ -69,11 +82,7 @@ All models are MoE. GPU placement uses optimized `-ot` regex configurations for 
 - Set up OpenAI-compatible client configurations for various tools
 - Define use cases: when local inference is worthwhile vs. cloud API
 - Goal: agents can be configured to use local models alongside cloud APIs (e.g. Claude for complex tasks, local model for simpler ones)
-
-### Model switching from API / agents
-- Allow switching the active model via API call or agent action — stop the current server, load a different model, restart
-- Enable workflows where an agent spins up a specific model for a task and shuts it down when done
-- Investigate whether llama.cpp's `--model-store` (if/when available) could handle this without full restarts
+- Foundation: management API (`POST /switch` on port 8081) is already built and tested
 
 ### Extended benchmarks
 - Add benchmarks for tasks beyond coding (reasoning, instruction following, tool calling)
