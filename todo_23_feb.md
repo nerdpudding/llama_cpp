@@ -23,6 +23,17 @@ config in `models.conf` — the wrapper makes this feel simple to use.
 - Solution must also support switching via API (for future integration
   with Claude Code, agents, and other tools that call the local server)
 
+## Claude Code ↔ local llama.cpp integration
+
+Goal: experiment with using local llama-server as Claude Code backend.
+Plan: `claude_plans/PLAN_claude_code_local_integration.md`
+
+- [ ] Phase 1: Verify llama.cpp build has Anthropic Messages API (PR #17570)
+- [ ] Phase 2: Test `/v1/messages` and `/v1/messages/count_tokens` with curl
+- [ ] Phase 3: Connect Claude Code to local server, test basic functionality
+- [ ] Phase 4: Convenience setup (shell alias / wrapper script)
+- [ ] Phase 5: Document findings
+
 ## Not this session (but keep in mind)
 
 ### API integration with external tools
