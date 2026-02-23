@@ -886,11 +886,14 @@ class Dashboard:
         row += 1
 
         if row < y + height:
-            api_url = "http://localhost:8080"
+            self._safe_addstr(stdscr, row, x + 1, "Web: ", curses.A_BOLD)
+            self._safe_addstr(stdscr, row, x + 6, "http://localhost:8080")
+            row += 1
+        if row < y + height:
             self._safe_addstr(stdscr, row, x + 1, "API: ", curses.A_BOLD)
             self._safe_addstr(stdscr, row, x + 6,
-                              f"{api_url}/v1/chat/completions")
-            mgmt_x = max(46, width // 2)
+                              "http://localhost:8080/v1/chat/completions")
+            mgmt_x = max(52, width // 2)
             self._safe_addstr(stdscr, row, mgmt_x, "Mgmt: ", curses.A_BOLD)
             self._safe_addstr(stdscr, row, mgmt_x + 6,
                               f"http://localhost:{API_PORT}")
