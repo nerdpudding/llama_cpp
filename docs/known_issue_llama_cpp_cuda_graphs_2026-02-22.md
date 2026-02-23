@@ -1,9 +1,10 @@
-# Known Issue: CUDA Graph Regression in llama.cpp
+# Known Issue: Qwen3next Graph Rewrite Regression in llama.cpp
 
 **Date discovered:** 2026-02-22
-**Status:** Open — waiting for upstream fix
+**Status:** Fix confirmed, waiting for merge into upstream master
 **Upstream issue:** https://github.com/ggml-org/llama.cpp/issues/19816
 **Pinned safe version:** `b48e80f67` (b8022, 2026-02-13)
+**Current version:** `ed4837891` with local one-line patch (see fix section)
 
 ---
 
@@ -29,28 +30,36 @@ Short prompts work fine, which makes the bug easy to miss during smoke testing.
 Occurs after prompt processing completes, during the first token generation
 step. The sampler initializes successfully, then the CUDA error fires.
 
-## Root cause analysis
+## Root cause — bisected
 
-The regression is in the CUDA graph capture logic in `ggml/src/ggml-cuda/ggml-cuda.cu`.
-Two PRs between our safe version and the broken tip are the likely culprits:
+**Bisected on 2026-02-23.** The first bad commit is:
 
-### PR #19645 — `cuda: enable CUDA graphs for MMID 1 <= BS <= 4`
-- Changed `MUL_MAT_ID` to allow CUDA graphs for small batch sizes with
-  quantized tensors
-- Previously any `MUL_MAT_ID` with `ne[2] != 1` disabled CUDA graphs
+```
+1725e316c — models : optimize qwen3next graph (#19375)
+Author: Georgi Gerganov
+Date:   Sat Feb 14 12:57:36 2026 +0200
+```
 
-### PR #19754 — `Improve CUDA graph capture`
-- Complete rewrite of the CUDA graph activation logic
-- Replaced the old "4 consecutive updates = permanently disable" safety mechanism
-  with a warmup-based system
-- Removed the `instance == nullptr` check from `ggml_cuda_graph_update_required`
-- Removed batch-size-per-node-name compatibility checks that were previously
-  blocking CUDA graphs for certain operations
+This PR rewrites the qwen3next computation graph for performance (~30% speedup
+on M2 Ultra). The rewrite changes how tensors are laid out — using `ggml_permute`
+and `ggml_transpose` views instead of `ggml_cont` copies, and restructuring the
+delta net chunking logic.
 
-The combination allows CUDA graphs to activate in MoE + multi-GPU scenarios
-where they were previously blocked. MoE expert routing varies per token, meaning
-memory access patterns are not stable between graph captures — exactly the
-condition where CUDA graphs break.
+The commit right before it (`b7742cf` — "ggml : fix GGML_DEBUG with OpenMP")
+works fine.
+
+**Not a CUDA graphs issue.** Tested `ed4837891` (latest) with
+`GGML_CUDA_DISABLE_GRAPHS=1` — same crash. The problem is in the graph rewrite
+itself, not CUDA graph capture.
+
+**Root cause identified by ggerganov:** `ggml_set_inplace` in the delta net
+chunking loop modifies a tensor directly in memory. When that tensor is split
+across multiple GPUs via `-ot`, the inplace write causes an illegal memory access.
+Fix: replace with `ggml_set` (non-inplace copy).
+
+**Previous analysis (superseded):** We initially suspected CUDA graph capture
+(PRs #19645 and #19754), but both the bisect and the `GGML_CUDA_DISABLE_GRAPHS=1`
+test ruled that out.
 
 ### History of this bug
 
@@ -59,33 +68,25 @@ This is the second time this pattern has occurred:
 1. **PR #18593** (Jan 2026) — Disabled CUDA graphs for `n-cpu-moe` to fix
    issue #18580 (same illegal memory access crash)
 2. **PR #18934** — Re-enabled CUDA graphs for `n-cpu-moe` (believed fixed)
-3. **PR #19645 + #19754** (Feb 2026) — Expanded CUDA graph coverage further,
-   reintroducing the crash
+3. **PR #19375** (Feb 2026) — Qwen3next graph rewrite reintroduced the crash
+   for multi-GPU `-ot` configurations
 
-## Workaround (if upstream doesn't fix it)
+## Fix
 
-Add an environment variable to `docker-compose.yml` to disable CUDA graphs entirely:
-
-```yaml
-services:
-  llama-server:
-    environment:
-      - GGML_CUDA_DISABLE_GRAPHS=1
+One-line change in `src/models/delta-net-base.cpp:262`:
+```diff
+- v = ggml_set_inplace(ctx0, v, o_ch, v->nb[1], v->nb[2], v->nb[3], chunk * v->nb[2]);
++ v = ggml_set(ctx0, v, o_ch, v->nb[1], v->nb[2], v->nb[3], chunk * v->nb[2]);
 ```
 
-This uses a built-in escape hatch in llama.cpp's `is_enabled()` function.
-No code changes required. Trade-off: loses the performance benefit of CUDA
-graphs for all models, not just MoE.
+**Tested and confirmed working** on `ed4837891` with this patch applied.
+Currently running this patched version locally.
 
-## What to do when checking on this issue
+## When the fix lands upstream
 
-1. Check https://github.com/ggml-org/llama.cpp/issues/19816 for updates
-2. If fixed, identify the fix commit and test by:
-   - Pulling the new version
-   - Rebuilding with `docker compose build --no-cache`
-   - Testing with a **long prompt** (100+ tokens) on a qwen3next model with
-     `-ot` multi-GPU splits — short prompts don't trigger the bug
-   - Testing all MoE models, not just one
-3. If not fixed but we need newer llama.cpp features, use the
-   `GGML_CUDA_DISABLE_GRAPHS=1` workaround
-4. Update this document and `lessons_learned.md` when resolved
+1. Check https://github.com/ggml-org/llama.cpp/issues/19816 for the merge
+2. Pull the new version, remove local patch
+3. Rebuild with `docker compose build --no-cache`
+4. Test with a **long prompt** (100+ tokens) on a qwen3next model with
+   `-ot` multi-GPU splits to verify
+5. Archive this document to `archive/`

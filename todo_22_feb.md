@@ -22,8 +22,19 @@
 ### Roadmap items (decide later)
 - [ ] Pick roadmap items to work on after benchmark is done
 
+## Completed (23 Feb)
+
+### Bisect and fix CUDA regression
+- [x] Bisected 93 commits using `git bisect` — found `1725e316c` (PR #19375, qwen3next graph rewrite)
+- [x] Tested `GGML_CUDA_DISABLE_GRAPHS=1` on latest — same crash, ruled out CUDA graphs
+- [x] ggerganov responded with one-line fix: `ggml_set_inplace` → `ggml_set`
+- [x] Applied patch, tested on `ed4837891` — fix confirmed, long prompts work
+- [x] Posted bisect result and fix confirmation on issue #19816
+- [x] Now running `ed4837891` with local patch, waiting for upstream merge
+
 ## Blocked
 
-### llama.cpp upstream update
-- **DO NOT UPDATE** until https://github.com/ggml-org/llama.cpp/issues/19816 is resolved
-- Full details and workaround: `docs/known_issue_llama_cpp_cuda_graphs_2026-02-22.md`
+### llama.cpp upstream merge
+- Waiting for `ggml_set_inplace` → `ggml_set` fix to merge into master
+- Running patched `ed4837891` locally in the meantime
+- Full details: `docs/known_issue_llama_cpp_cuda_graphs_2026-02-22.md`
