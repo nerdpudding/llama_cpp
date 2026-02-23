@@ -28,11 +28,21 @@ config in `models.conf` — the wrapper makes this feel simple to use.
 Goal: experiment with using local llama-server as Claude Code backend.
 Plan: `claude_plans/PLAN_claude_code_local_integration.md`
 
-- [ ] Phase 1: Verify llama.cpp build has Anthropic Messages API (PR #17570)
-- [ ] Phase 2: Test `/v1/messages` and `/v1/messages/count_tokens` with curl
-- [ ] Phase 3: Connect Claude Code to local server, test basic functionality
-- [ ] Phase 4: Convenience setup (shell alias / wrapper script)
-- [ ] Phase 5: Document findings
+- [x] Phase 1: Verify llama.cpp build has Anthropic Messages API (PR #17570)
+      - Confirmed: build `ed4837891` has both `/v1/messages` and `/v1/messages/count_tokens`
+      - `--jinja` already on all profiles, no changes needed
+- [x] Phase 2: Test `/v1/messages` and `/v1/messages/count_tokens` with curl
+      - Both endpoints work on GLM Flash Q4
+      - Messages API returns valid Anthropic format (with thinking blocks)
+      - Token counting returns `{"input_tokens": N}`
+- [x] Phase 3: Connect Claude Code to local server, test basic functionality
+      - Working: chat, tool use (Glob, Read), Dutch responses, file comprehension
+      - Auth bypass: `ANTHROPIC_AUTH_TOKEN=llamacpp` + `ANTHROPIC_API_KEY=""`
+      - Sandboxed with `HOME=test/` to avoid OAuth conflict with main session
+      - Launch script: `test/run.sh`
+- [ ] Phase 4: Proper sandboxing (Claude Code /sandbox, Docker, or combination)
+- [ ] Phase 5: Convenience setup (after sandboxing is solved)
+- [ ] Phase 6: Document findings
 
 ## Not this session (but keep in mind)
 

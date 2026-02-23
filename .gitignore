@@ -16,3 +16,6 @@ benchmarks/evalplus/results/
 !benchmarks/evalplus/results/REPORT.md
 !benchmarks/evalplus/results/NOTES_max_tokens.md
 benchmarks/evalplus/.venv/
+
+# Test sandbox for Claude Code local experiments
+test/

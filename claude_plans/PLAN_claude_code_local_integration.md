@@ -75,10 +75,10 @@ change needed.
 
 ### Phase 1: Verify & Prepare
 
-**1a. Check llama.cpp version**
-- Verify our local llama.cpp build includes the Anthropic Messages API (PR #17570)
-- If not, update llama.cpp and rebuild the Docker image
-- Test: `curl http://localhost:8080/v1/messages` should respond (even with error)
+**1a. Check llama.cpp version** ✓
+- Build `ed4837891` includes Anthropic Messages API
+- Routes confirmed in `server.cpp:181-182`: `POST /v1/messages` and `POST /v1/messages/count_tokens`
+- No rebuild needed
 
 **~~1b. Add `--jinja` flag~~** — already present on all profiles, nothing to do.
 
@@ -91,94 +91,77 @@ Claude Code has issues with concurrent requests. No preemptive changes.
 - Use `./start.sh glm-flash-q4` (or whichever model)
 - Verify the server is running on port 8080
 
-**2b. Test Anthropic Messages API directly**
-```bash
-curl http://localhost:8080/v1/messages \
-  -H "Content-Type: application/json" \
-  -H "x-api-key: local" \
-  -d '{
-    "model": "glm-flash-q4",
-    "max_tokens": 100,
-    "messages": [{"role": "user", "content": "Hello, what model are you?"}]
-  }'
-```
+**2b. Test Anthropic Messages API directly** ✓
+- Tested with GLM Flash Q4. Returns valid Anthropic format response.
+- Thinking blocks included (GLM is a reasoning model).
+- Model name in response: `GLM-4.7-Flash-Q4_K_M.gguf`
 
-**2c. Test token counting endpoint**
-```bash
-curl http://localhost:8080/v1/messages/count_tokens \
-  -H "Content-Type: application/json" \
-  -H "x-api-key: local" \
-  -d '{
-    "model": "glm-flash-q4",
-    "messages": [{"role": "user", "content": "Hello"}]
-  }'
-```
+**2c. Test token counting endpoint** ✓
+- Returns `{"input_tokens": 11}` for a simple message. Works.
 
 ### Phase 3: Connect Claude Code
 
-**3a. Launch a separate Claude Code instance pointed at local server**
-```bash
-ANTHROPIC_BASE_URL=http://127.0.0.1:8080 \
-ANTHROPIC_AUTH_TOKEN=local \
-ANTHROPIC_API_KEY="" \
-ANTHROPIC_MODEL=glm-flash-q4 \
-claude
-```
+**3a. Launch a separate Claude Code instance pointed at local server** ✓
 
-Note: `ANTHROPIC_API_KEY=""` prevents Claude Code from trying to authenticate
-with Anthropic. `ANTHROPIC_AUTH_TOKEN` can be anything.
-
-**3b. Test basic functionality**
-- Does it start without errors?
-- Can it respond to simple questions?
-- Does tool use work (file reading, bash commands)?
-- What happens with the Haiku background calls?
-- How fast/responsive is it?
-
-**3c. Document what works and what doesn't**
-- Keep notes on errors, limitations, and workarounds
-- This is the experimental phase — we expect issues
-
-### Phase 4: Convenience Setup (if Phase 3 works)
-
-**4a. Create shell aliases/scripts for easy switching**
-```bash
-# ~/.bashrc or similar
-alias claude-local='ANTHROPIC_BASE_URL=http://127.0.0.1:8080 ANTHROPIC_AUTH_TOKEN=local ANTHROPIC_API_KEY="" claude'
-alias claude-api='claude'  # default, uses subscription
-```
-
-Or a wrapper script:
+Launch script (`test/run.sh`):
 ```bash
 #!/bin/bash
-# claude-local.sh — start Claude Code with local llama.cpp backend
+export HOME=/home/rvanpolen/vibe_claude_kilo_cli_exp/llama_cpp/test
 export ANTHROPIC_BASE_URL=http://127.0.0.1:8080
-export ANTHROPIC_AUTH_TOKEN=local
+export ANTHROPIC_AUTH_TOKEN=llamacpp
 export ANTHROPIC_API_KEY=""
-export ANTHROPIC_MODEL="${1:-glm-flash-q4}"
-exec claude
+export ANTHROPIC_MODEL=glm-flash-q4
+export ANTHROPIC_SMALL_FAST_MODEL=glm-flash-q4
+export CLAUDE_CODE_DISABLE_NONESSENTIAL_TRAFFIC=1
+exec claude --model glm-flash-q4
 ```
 
-**4b. Consider dedicated models.conf profiles**
-If needed (VRAM constraints with `-np 2`, or reduced context for Claude Code
-overhead), create `cc-*` profiles in models.conf:
-```ini
-[cc-glm-flash-q4]
-DESCRIPTION=GLM Flash Q4 — Claude Code profile
-MODEL=models/GLM-4.7-Flash/...
-CTX_SIZE=32768          # Reduced from 128K — Claude Code eats ~16K for system prompt
-EXTRA_ARGS=--jinja -np 2
-```
+Key details:
+- `ANTHROPIC_AUTH_TOKEN=llamacpp` — bypasses OAuth login (Ollama-style approach)
+- `ANTHROPIC_API_KEY=""` — empty, so Claude Code doesn't try Anthropic auth
+- `HOME=test/` — sandboxed to avoid OAuth conflict with main Claude Code session
+- `CLAUDE_CODE_DISABLE_NONESSENTIAL_TRAFFIC=1` — keeps it fully local
+- `ANTHROPIC_SMALL_FAST_MODEL` — routes background tasks to same local model
 
-**4c. Integration with management API**
-The management API on port 8081 already supports model switching (`POST /switch`).
-A Claude Code instance connected to the local server could potentially trigger
-model switches. This is future work — note it but don't implement yet.
+**3b. Test results** ✓
+- Chat: works (responds in Dutch when prompted in Dutch)
+- Tool use: works (Glob search, Read files)
+- Auth: no conflict when sandboxed with separate HOME
+- Bash commands: not yet tested
+- `-np 1`: no issues observed so far (single slot)
+- **BLOCKER: Isolation insufficient.** HOME override does not fully sandbox
+  Claude Code — it traverses parent directories and picks up project-level
+  config (AI_INSTRUCTIONS.md, .claude/). A local model is less capable than
+  Opus and more likely to make mistakes. Uncontrolled access to project files
+  and config is too risky.
 
-### Phase 5: Documentation
+**Cleanup done:** test artifacts removed, global and project config verified intact.
 
-- Update `todo_23_feb.md` with progress
-- Document findings in `docs/` (what works, what doesn't, recommended setup)
+### Phase 4: Proper Sandboxing (TODO — replaces old Phase 4)
+
+Before the local Claude Code instance can be used for real work, proper
+isolation is needed. Options to investigate:
+
+1. **Claude Code `/sandbox` command** — built-in OS-level sandboxing using
+   bubblewrap (Linux). Restricts filesystem writes to working directory only,
+   network to approved hosts only. Requires `bubblewrap` + `socat` packages.
+2. **Docker sandboxing** — run Claude Code itself inside a Docker container
+   with controlled volume mounts. Full isolation from host filesystem.
+3. **Combination** — Docker for hard isolation + `/sandbox` inside.
+
+Requirements for any solution:
+- Cannot write outside a designated work directory
+- Cannot access or modify project config (.claude/, AI_INSTRUCTIONS.md, etc.)
+- Can reach localhost:8080 (llama-server API) but nothing else
+- Cannot interfere with the main Claude Code session (OAuth, settings)
+
+### Phase 5: Convenience Setup (after sandboxing is solved)
+
+Deferred — wrapper scripts and aliases only make sense once sandboxing works.
+
+### Phase 6: Documentation
+
+- Document the working setup and sandboxing approach
 - Update ROADMAP.md to reflect progress on API integration
 
 ## What We're NOT Doing (yet)
