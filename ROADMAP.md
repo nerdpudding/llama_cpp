@@ -2,13 +2,14 @@
 
 ## Current Status
 
-Five models are configured in `models.conf` and selectable via `./start.sh` on a dual-GPU desktop (RTX 4090 + RTX 5070 Ti):
+Six models are configured in `models.conf` and selectable via `./start.sh` on a dual-GPU desktop (RTX 4090 + RTX 5070 Ti):
 
 - **GLM-4.7 Flash Q4_K_M** — ~147 t/s, 128K context, fast general tasks, reasoning, tool calling
 - **GLM-4.7 Flash Q8_0** — ~112 t/s, 128K context, higher quality reasoning and tool calling
+- **GLM-4.7 Flash Q8_0 (experimental)** — ~112 t/s, 128K context, experimental config
 - **GPT-OSS 120B F16** — ~22 t/s, 128K context, deep reasoning, knowledge, structured output
 - **Qwen3-Coder-Next UD-Q5_K_XL** — ~33 t/s, 256K context, coding agents, agentic tasks
-- **Qwen3-Next-80B-A3B UD-Q5_K_XL** — ~33 t/s, 262K context, general-purpose reasoning, knowledge, agentic tasks, ultra-long context
+- **Qwen3-Next-80B-A3B UD-Q5_K_XL** — ~33 t/s, 256K context, general-purpose reasoning, knowledge, agentic tasks, ultra-long context
 
 All models are MoE. GPU placement uses `--fit` with `--n-gpu-layers auto` — FIT automatically distributes layers and expert tensors across CUDA0, CUDA1, and CPU RAM. See `docs/gpu-strategy-guide.md` for details and `docs/bench-test-results.md` for historical performance data. Latest EvalPlus HumanEval+ scores are in `benchmarks/evalplus/results/REPORT.md`.
 
@@ -27,7 +28,7 @@ All models are MoE. GPU placement uses `--fit` with `--n-gpu-layers auto` — FI
   - `GET /status` — current model, server state, status message
   - `POST /switch` — switch model by profile ID, blocks until healthy (or 300s timeout)
 - `start.sh` passes `--models-conf` and `--current-profile` to dashboard.py
-- Plan: `claude_plans/PLAN_model_switching.md`
+- Plan: `archive/2026-02-23_PLAN_model_switching.md`
 
 ### Formal benchmarks (EvalPlus HumanEval+)
 - EvalPlus benchmark runner in `benchmarks/evalplus/` — runs HumanEval+ (164 Python problems) against all models via the llama.cpp OpenAI API
@@ -68,14 +69,17 @@ All models are MoE. GPU placement uses `--fit` with `--n-gpu-layers auto` — FI
 - Uses specialized agents (model-manager, gpu-optimizer, benchmark, doc-keeper) at each phase
 - Candidate models listed in README under "Adding New Models"
 
-## Next Up
+## In Progress
 
-*(Nothing currently scheduled — see Future for planned work.)*
+### Claude Code ↔ local llama.cpp integration (2026-02-23)
+- Phases 1-3 done: Anthropic Messages API verified in build, tested with curl, Claude Code successfully connected to local GLM Flash Q4 (chat + tool use working)
+- **Blocker:** HOME-based isolation insufficient — Claude Code traverses parent directories and picks up project config. Need proper sandboxing (Claude Code `/sandbox`, Docker, or combination) before it can be used safely
+- Next: Phase 4 (sandboxing), then convenience setup and documentation
+- Plan: `claude_plans/PLAN_claude_code_local_integration.md`
 
 ## Future
 
-### API integration with external tools
-- Configure Claude Code to use the local llama-server as an alternative backend
+### API integration with other external tools
 - Test integration with Continue.dev, aider, and other coding assistants
 - Test integration with personal AI assistants like OpenClaw
 - Set up OpenAI-compatible client configurations for various tools

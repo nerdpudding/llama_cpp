@@ -44,7 +44,11 @@ For non-trivial changes, follow this order:
 │   ├── client-settings.md              # ** Recommended client-side sampler settings per model **
 │   ├── bench-test-results.md           # Bench profile GPU optimization results (VRAM, speeds, OOM tests)
 │   ├── dgx-spark-comparison.md         # DGX Spark vs desktop comparison (draft article)
-│   └── lessons_learned.md              # Mistakes made and prevention rules
+│   ├── lessons_learned.md              # Mistakes made and prevention rules
+│   ├── claude_tips.md                  # Claude Code usage tips
+│   ├── extended-benchmarks-research.md # Research on non-coding benchmarks
+│   ├── alternative_benches_advice.md   # Alternative benchmark options
+│   └── screenshots/                    # UI screenshots for README
 ├── models/                           # GGUF model files (gitignored)
 │   ├── documentation/                # Model cards from HuggingFace
 │   │   ├── CANDIDATES/               # Model cards for potential future models

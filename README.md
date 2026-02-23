@@ -15,7 +15,7 @@ So I went back to [llama.cpp](https://github.com/ggml-org/llama.cpp) — a high-
 
 llama.cpp itself provides the inference engine, web UI, and API. Everything else listed above is part of this wrapper. The goal is simple: get the most out of my hardware in terms of model quality, speed, and context length.
 
-**What's next:** Since the API is OpenAI-compatible, this setup can serve as a local backend for coding assistants like Claude Code, Continue.dev, and aider, personal AI assistants like [OpenClaw](https://github.com/openclaw/openclaw), or any other tool that speaks the OpenAI API — using your own hardware instead of (or alongside) cloud APIs. That integration is the main next step. Model switching is already available — the management API (`POST /switch` on port 8081) lets agents and external tools switch the active model programmatically. See the [Roadmap](ROADMAP.md) for details.
+**What's next:** Since llama.cpp now supports the Anthropic Messages API natively, this setup can serve as a local backend for Claude Code and other tools that speak the Anthropic or OpenAI API — using your own hardware instead of (or alongside) cloud APIs. Initial testing with Claude Code is working (chat and tool use confirmed); proper sandboxing is the remaining step before it can be used for real work. Integration with Continue.dev, aider, and [OpenClaw](https://github.com/openclaw/openclaw) is planned after that. Model switching is already available — the management API (`POST /switch` on port 8081) lets agents and external tools switch the active model programmatically. See the [Roadmap](ROADMAP.md) for details.
 
 **Who is this for?** Anyone interested in llama.cpp, GPU utilization strategies for local inference, and also to some extent: how to use Claude Code agents and skills to develop and maintain a project like this. It's also a working reference for how different model architectures (MoE vs dense) behave with automatic GPU placement (`--fit`), and includes documentation on those trade-offs. **However — this is not a plug-and-play installer.** The Docker build **compiles llama.cpp for specific GPU architectures** (sm_89 + sm_120), and **all model configurations are tuned and tested for my exact hardware**. You can absolutely adapt it to your own setup, but you'll need to **adjust GPU layers and possibly build flags**. The detailed docs are there to help with that.
 
@@ -122,7 +122,7 @@ All models are MoE (Mixture of Experts) and defined in `models.conf`. Use the se
 | `glm-flash-exp` | GLM-4.7 Flash Q8_0 (experimental) | ~112 t/s | 128K | Experimental |
 | `gpt-oss-120b` | GPT-OSS 120B F16 | ~22 t/s | 128K | Deep reasoning, knowledge |
 | `qwen3-coder-ud-q5` | Qwen3-Coder-Next UD-Q5_K_XL | ~33 t/s | 256K | Coding agents |
-| `qwen3-next-ud-q5` | Qwen3-Next-80B-A3B UD-Q5_K_XL | ~33 t/s | 262K | General reasoning, ultra-long context |
+| `qwen3-next-ud-q5` | Qwen3-Next-80B-A3B UD-Q5_K_XL | ~33 t/s | 256K | General reasoning, ultra-long context |
 
 ### Sampler settings
 
@@ -153,14 +153,14 @@ Coding benchmark: 164 Python problems (HumanEval+), pass@1, greedy decoding. Hum
 | 2 | Claude Opus 4.6 (thinking) | 99.4% | 93.9% | +5.2pp |
 | 3 | Qwen3-Next UD-Q5_K_XL | 98.2% | 93.9% | — |
 | 4 | Qwen3-Coder-Next UD-Q5_K_XL | 93.9% | 90.9% | -0.2pp |
-| 5 | Qwen3-Coder-Next UD-Q6_K_XL | 92.1% | 89.0% | -2.0pp |
+| 5 | Qwen3-Coder-Next UD-Q6_K_XL | 92.1% | 89.0% | — |
 | 6 | GLM-4.7 Flash Q8_0 * | 89.0% | 87.2% | +2.0pp |
 | 7 | GPT-OSS 120B F16 | 93.3% | 87.2% | +5.0pp |
 | 8 | GLM-4.7 Flash Q4_K_M * | 87.8% | 83.5% | +0.8pp |
 
 **"vs published"** = difference in HumanEval score compared to the closest published reference score for that model (from model cards, [EvalPlus leaderboard](https://evalplus.github.io/leaderboard.html), or benchmark articles). Not always an exact apples-to-apples comparison — see [REPORT.md](benchmarks/evalplus/results/REPORT.md) for full details, reference sources, and caveats.
 
-\* Reasoning model — benchmarked with `--reasoning-format none` (thinking tokens included in output). Claude was benchmarked using the same prompts and evaluation pipeline but generated via `claude -p` (CLI) instead of the llama.cpp API.
+\* Reasoning model — benchmarked with `--reasoning-format none` (thinking tokens included in output). Claude was benchmarked via Claude Code (Max subscription) using a custom agent with the same prompts and evaluation pipeline, instead of the llama.cpp API.
 
 Full results with proprietary model comparisons: [benchmarks/evalplus/results/REPORT.md](benchmarks/evalplus/results/REPORT.md)
 
@@ -264,7 +264,11 @@ See [ROADMAP.md](ROADMAP.md) for current status, completed milestones, and futur
 │   ├── client-settings.md                 # Recommended client-side sampler settings per model
 │   ├── bench-test-results.md              # Bench profile GPU optimization (VRAM, speeds, OOM tests)
 │   ├── dgx-spark-comparison.md            # DGX Spark vs desktop comparison (draft article)
-│   └── lessons_learned.md                 # Mistakes and prevention rules
+│   ├── lessons_learned.md                 # Mistakes and prevention rules
+│   ├── claude_tips.md                     # Claude Code usage tips
+│   ├── extended-benchmarks-research.md    # Research on non-coding benchmarks
+│   ├── alternative_benches_advice.md      # Alternative benchmark options
+│   └── screenshots/                       # UI screenshots for README
 ├── models/                        # GGUF files (gitignored)
 │   ├── .gitkeep
 │   ├── documentation/             # Model cards (README from HuggingFace)
