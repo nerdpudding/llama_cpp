@@ -82,6 +82,32 @@ One-line change in `src/models/delta-net-base.cpp:262`:
 **Tested and confirmed working** on `ed4837891` with this patch applied.
 Currently running this patched version locally.
 
+## Alternative approaches tested (2026-02-23)
+
+ggerganov suggested `-ts` (tensor-split) as the proper way to split GPU load,
+and pwilkin suggested `--fit` without `-ot`. Both were tested at 262K context:
+
+| Config | Result | Speed | Notes |
+|--------|--------|-------|-------|
+| `-ot blk.0-18=CUDA0,blk.19-27=CUDA1,exps=CPU` (no patch) | **Crash** | — | Original bug |
+| `-ot blk.0-18=CUDA0,blk.19-27=CUDA1,exps=CPU` (with patch) | Works | ~29.5 t/s | 10K ctx bench |
+| `-ot blk.0-16=CUDA0,blk.17-24=CUDA1,exps=CPU` (with patch) | Works | ~28 t/s | 262K ctx production |
+| `-ot exps=CPU` with `--fit on` (no patch) | Works | ~21.7 t/s | GPUs barely used (~1.6 GB total) |
+| `-ts 21,10 -ot exps=CPU` (no patch) | Works | ~19.8 t/s | Same problem: GPUs barely used |
+| `--fit on` without `-ot` | **OOM** | — | 53 GB model > 40 GB total GPU |
+
+**Conclusion:** `-ts` and `--fit` don't achieve the same GPU utilization as
+explicit `-ot` layer assignments. With `-ot exps=CPU`, the expert weights move
+to CPU but `-ts` only distributes the remaining ~1.6 GB of non-expert data
+across GPUs. Without `-ot exps=CPU`, the model doesn't fit at all.
+
+The explicit `-ot blk.X=CUDA0,blk.Y=CUDA1,exps=CPU` configuration keeps the
+non-expert parts of each layer on the assigned GPU (~21 GB CUDA0, ~10 GB CUDA1)
+while only the expert tensors go to CPU. This is the only way to get good GPU
+utilization on asymmetric multi-GPU setups (RTX 4090 24GB + RTX 5070 Ti 16GB).
+
+See commented-out test profiles in `models.conf` for exact configurations.
+
 ## When the fix lands upstream
 
 1. Check https://github.com/ggml-org/llama.cpp/issues/19816 for the merge
