@@ -1,5 +1,7 @@
 # Bisecting the CUDA Graph Regression
 
+> **Completed — archived here for reference.** The bisect was completed on 2026-02-23. The first bad commit was `1725e316c` (PR #19375, "models: optimize qwen3next graph"). The fix was confirmed (replace `ggml_set_inplace` with `ggml_set` in `delta-net-base.cpp`). The project has since migrated to `--fit` with `--n-gpu-layers auto`, which avoids the `-ot` crash path entirely. Full findings: `docs/known_issue_llama_cpp_cuda_graphs_2026-02-22.md`.
+
 **Issue:** https://github.com/ggml-org/llama.cpp/issues/19816
 **Goal:** Find the exact commit that introduced the CUDA illegal memory access crash with `-ot` multi-GPU splits on MoE models.
 

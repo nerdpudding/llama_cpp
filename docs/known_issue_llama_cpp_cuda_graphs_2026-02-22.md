@@ -1,7 +1,7 @@
 # Known Issue: Qwen3next Graph Rewrite Regression in llama.cpp
 
 **Date discovered:** 2026-02-22
-**Status:** Fix confirmed, waiting for merge into upstream master
+**Status:** Resolved — migrated to `--fit` with `--n-gpu-layers auto`. All `-ot` profiles removed.
 **Upstream issue:** https://github.com/ggml-org/llama.cpp/issues/19816
 **Pinned safe version:** `b48e80f67` (b8022, 2026-02-13)
 **Current version:** `ed4837891` with local one-line patch (see fix section)
@@ -85,34 +85,58 @@ Currently running this patched version locally.
 ## Alternative approaches tested (2026-02-23)
 
 ggerganov suggested `-ts` (tensor-split) as the proper way to split GPU load,
-and pwilkin suggested `--fit` without `-ot`. Both were tested at 262K context:
+and pwilkin suggested `--fit` without `-ot`. Both were tested at 262K context.
+Initial tests used `N_GPU_LAYERS=99` (then-current docker-compose default):
 
-| Config | Result | Speed | Notes |
-|--------|--------|-------|-------|
-| `-ot blk.0-18=CUDA0,blk.19-27=CUDA1,exps=CPU` (no patch) | **Crash** | — | Original bug |
-| `-ot blk.0-18=CUDA0,blk.19-27=CUDA1,exps=CPU` (with patch) | Works | ~29.5 t/s | 10K ctx bench |
-| `-ot blk.0-16=CUDA0,blk.17-24=CUDA1,exps=CPU` (with patch) | Works | ~28 t/s | 262K ctx production |
-| `-ot exps=CPU` with `--fit on` (no patch) | Works | ~21.7 t/s | GPUs barely used (~1.6 GB total) |
-| `-ts 21,10 -ot exps=CPU` (no patch) | Works | ~19.8 t/s | Same problem: GPUs barely used |
-| `--fit on` without `-ot` | **OOM** | — | 53 GB model > 40 GB total GPU |
+| Config | N_GPU_LAYERS | Result | Speed | Notes |
+|--------|-------------|--------|-------|-------|
+| `-ot blk.0-18=CUDA0,blk.19-27=CUDA1,exps=CPU` | 99 | **Crash** | — | Original bug |
+| `-ot blk.0-18=CUDA0,blk.19-27=CUDA1,exps=CPU` (with patch) | 99 | Works | ~29.5 t/s | 10K ctx bench |
+| `-ot blk.0-16=CUDA0,blk.17-24=CUDA1,exps=CPU` (with patch) | 99 | Works | ~28 t/s | 262K ctx production |
+| `-ot exps=CPU` with `--fit on` | 99 | Works | ~21.7 t/s | GPUs barely used (~1.6 GB total) |
+| `-ts 21,10 -ot exps=CPU` | 99 | Works | ~19.8 t/s | Same problem: GPUs barely used |
+| `--fit on` without `-ot` | 99 | **OOM** | — | 53 GB model > 40 GB total GPU |
+| `--fit on` without `-ot` | **auto** | **Works** | **~32.9 t/s** | **FIT offloads experts to CPU automatically** |
 
-**Conclusion:** `-ts` and `--fit` don't achieve the same GPU utilization as
-explicit `-ot` layer assignments. With `-ot exps=CPU`, the expert weights move
-to CPU but `-ts` only distributes the remaining ~1.6 GB of non-expert data
-across GPUs. Without `-ot exps=CPU`, the model doesn't fit at all.
+**Revised conclusion (2026-02-23):** The initial OOM with `--fit on` without `-ot`
+was caused by `N_GPU_LAYERS=99` overriding FIT's automatic layer count calculation.
+With `N_GPU_LAYERS=99`, llama.cpp attempted to place all 99 layers on GPU, OOMing
+before FIT could offload experts to CPU. Changing to `--n-gpu-layers auto` (which
+lets FIT decide) resolved the issue.
 
-The explicit `-ot blk.X=CUDA0,blk.Y=CUDA1,exps=CPU` configuration keeps the
-non-expert parts of each layer on the assigned GPU (~21 GB CUDA0, ~10 GB CUDA1)
-while only the expert tensors go to CPU. This is the only way to get good GPU
-utilization on asymmetric multi-GPU setups (RTX 4090 24GB + RTX 5070 Ti 16GB).
+With `--fit on` and `--n-gpu-layers auto`, Qwen3-Next at 262K achieves:
+- 32.9 t/s (vs 26.5 t/s with manual `-ot`)
+- 55 graph splits (vs 136 with manual `-ot`)
+- CUDA0 ~20 GB, CUDA1 ~8 GB, CPU ~53 GB experts
+
+This is significantly better than the manual `-ot` approach in both speed and
+graph splits. All profiles were converted to FIT auto on 2026-02-23.
 
 See commented-out test profiles in `models.conf` for exact configurations.
 
-## When the fix lands upstream
+## Resolution
 
-1. Check https://github.com/ggml-org/llama.cpp/issues/19816 for the merge
-2. Pull the new version, remove local patch
-3. Rebuild with `docker compose build --no-cache`
-4. Test with a **long prompt** (100+ tokens) on a qwen3next model with
-   `-ot` multi-GPU splits to verify
-5. Archive this document to `archive/`
+The `-ot` CUDA illegal memory access bug (PR #19375 regression) was addressed via
+two parallel tracks:
+
+1. **Local patch** (applied to `ed4837891`): replace `ggml_set_inplace` with
+   `ggml_set` in `src/models/delta-net-base.cpp:262`. This fixes the crash for
+   `-ot` configurations.
+
+2. **Migration to FIT auto** (2026-02-23): removed all `-ot` GPU device assignments
+   from `models.conf`, set `N_GPU_LAYERS=auto` in Dockerfile and docker-compose.yml.
+   FIT auto produces better speed and fewer graph splits than the old `-ot` approach,
+   and avoids the class of bugs that affect `-ot` multi-GPU configurations entirely.
+
+The project now runs on track 2. The local patch is still in place for the current
+build version (`ed4837891`) but is no longer load-bearing — FIT auto does not use
+`-ot` tensor splits, so the PR #19375 crash path cannot be triggered.
+
+## If reverting to -ot (not recommended)
+
+If future work requires manual `-ot` placement:
+1. Verify the upstream fix for PR #19375 has been merged, or keep the local patch
+2. Set `N_GPU_LAYERS=99` in Dockerfile and docker-compose.yml
+3. Add `-ot blk.X=CUDA0,blk.Y=CUDA1,exps=CPU` back to EXTRA_ARGS with `FIT=off`
+4. Test with a **long prompt** (100+ tokens) on all affected models
+5. This document provides the historical context

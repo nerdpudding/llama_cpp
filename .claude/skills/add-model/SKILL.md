@@ -48,11 +48,12 @@ The agent will:
 3. Check `docs/lessons_learned.md` for pitfalls
 4. Study existing optimized profiles in `models.conf` as reference
 5. Calculate VRAM budget (model weights + KV cache at target context + compute buffers)
-6. Select strategy (A/B/C/D) and generate `-ot` regex if needed
+6. Select strategy: Strategy A (single GPU) or FIT auto (multi-GPU). Do NOT use `-ot` GPU assignments or set `N_GPU_LAYERS=99` / `FIT=off`.
 7. Add production profile to `models.conf` with:
    - NAME, DESCRIPTION, SPEED (marked as `~estimated`)
-   - MODEL path, CTX_SIZE, N_GPU_LAYERS=99, FIT=off
-   - EXTRA_ARGS with `--jinja -np 1` and placement flags
+   - MODEL path, CTX_SIZE
+   - EXTRA_ARGS with `--jinja -np 1` and sampler/placement flags
+     (add `--split-mode none --main-gpu 0` only for Strategy A)
    - Comments: architecture source, strategy rationale
    - Comment: `# NOT YET TESTED — run ./start.sh <id> and share startup logs`
 
@@ -85,10 +86,10 @@ Ask the user if they want a bench profile. If yes:
 Use the **gpu-optimizer** agent to create a bench profile in `models.conf`:
 - Section ID: `[bench-<model-id>]`
 - CTX_SIZE=10240 (HumanEval worst case ~8.4K)
-- `-b 512 -ub 512` (small prompts)
-- More GPU layers than production (less KV cache = more room for weights)
 - `--reasoning-format none` if it's a thinking model (chain-of-thought must go into content field for evalplus)
 - No sampler args (evalplus sends temperature=0)
+- For Strategy A (single GPU): add `--split-mode none --main-gpu 0`
+- For multi-GPU: no placement flags — FIT auto handles it (smaller context = FIT keeps more on GPU automatically)
 
 Use the **benchmark** agent to update pipeline files:
 - `benchmarks/evalplus/bench-client.conf` — add section if model needs a system prompt

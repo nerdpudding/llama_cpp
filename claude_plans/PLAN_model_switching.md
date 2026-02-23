@@ -35,11 +35,11 @@ Key coupling points:
 
 ## Why not use llama-server's `/models/load` and `/models/unload`?
 
-Each model has a unique server configuration in models.conf: different `-ot`
-regex, context size, GPU layers, batch sizes, and flags. These are llama-server
-**startup parameters**, not runtime-changeable settings. The `/models/load`
-endpoint can swap the model file, but it cannot change `-ot`, `--ctx-size`,
-`--n-gpu-layers`, or other flags.
+Each model has a unique server configuration in models.conf: different context
+size, GPU placement flags (`--fit`, `--split-mode`), batch sizes, and sampler
+defaults. These are llama-server **startup parameters**, not runtime-changeable
+settings. The `/models/load` endpoint can swap the model file, but it cannot
+change `--ctx-size`, `--n-gpu-layers`, `--fit`, or other startup flags.
 
 **Conclusion:** model switching requires a container restart. This is not a
 limitation we can work around — it's fundamental to how llama-server works.
@@ -146,6 +146,8 @@ This is ~40 lines of code on top of the switch logic we already build in Step 3.
 3. **Log buffer persists** — old model logs remain scrollable
 4. **models.conf is the single source of truth** — dashboard reads the same
    config as start.sh, no duplication
+5. **FIT auto handles GPU placement** — no per-model `-ot` regex needed;
+   each profile still has unique context, sampler, and split-mode settings
 5. **switch_model() is a method, not inline code** — used by both `m` key and API endpoint
 
 ### Files Changed

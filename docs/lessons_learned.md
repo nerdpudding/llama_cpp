@@ -186,5 +186,40 @@ Similar issue was previously reported as #18580 and fixed by PR #18593.
 **Prevention rule:** When updating llama.cpp, always test with:
 1. A short prompt (smoke test — does it load?)
 2. A long prompt (100+ tokens — does inference actually work?)
-3. All model architectures that use `-ot` multi-GPU splits
+3. All model architectures, especially MoE models with multi-GPU placement
 4. Only then consider the update safe
+
+---
+
+## 7. Hardcoded N_GPU_LAYERS=99 prevented FIT from working
+
+**What happened:** `docker-compose.yml` had `N_GPU_LAYERS` defaulting to `99`
+and `Dockerfile` set `ENV N_GPU_LAYERS=99`. When testing `--fit on` without
+`-ot` on Qwen3-Next (53 GB model, 40 GB total GPU VRAM), it OOM'd immediately.
+The conclusion at the time was "FIT without `-ot exps=CPU` doesn't fit".
+
+During investigation of issue #19816, pwilkin's suggestion to try `--fit` without
+`-ot` was tested again — but with `N_GPU_LAYERS=auto`. FIT then worked correctly:
+it placed layers on GPU as long as VRAM allowed, then offloaded experts to CPU.
+Result: 32.9 t/s at 262K context, 55 graph splits.
+
+**Root cause:** With `N_GPU_LAYERS=99`, llama.cpp interpreted the flag as "try to
+put 99 layers on GPU" — overriding FIT's automatic capacity-aware placement logic.
+FIT's offloading logic only activates when it is allowed to set the layer count
+itself (`--n-gpu-layers auto`). With a hardcoded `99`, it tried to load all layers
+on GPU before FIT could decide to offload, causing the OOM.
+
+**Impact:**
+- All previous FIT tests with MoE models were invalid — they all ran with `N_GPU_LAYERS=99`
+- The comparison "FIT gives 21.7 t/s, `-ot` gives 28 t/s" was comparing FIT-broken
+  (hardcoded 99 layers) against `-ot` (manual but correct). Fair comparison: FIT
+  gives 32.9 t/s vs `-ot` 28 t/s (with patch).
+- The old `-ot` approach was replaced in all profiles on 2026-02-23.
+
+**Prevention rule:**
+- Never hardcode `N_GPU_LAYERS` to a specific number in infrastructure files
+  (Dockerfile, docker-compose.yml). Use `auto` as the default.
+- When testing auto-placement features like FIT, verify that no other config
+  variable is overriding the auto behavior.
+- When a feature "doesn't work", check for env var overrides before concluding
+  the feature is broken.

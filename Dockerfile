@@ -45,7 +45,7 @@ COPY --from=build /build/build/bin/llama-server /usr/local/bin/llama-server
 # ---------------------------------------------------------------------------
 ENV MODEL=/models/model.gguf
 ENV CTX_SIZE=131072
-ENV N_GPU_LAYERS=99
+ENV N_GPU_LAYERS=auto
 ENV HOST=0.0.0.0
 ENV PORT=8080
 ENV SPLIT_MODE=layer

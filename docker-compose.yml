@@ -29,7 +29,7 @@ services:
       # ---- Context ----
       - CTX_SIZE=${CTX_SIZE:-131072}
       # ---- GPU offload ----
-      - N_GPU_LAYERS=${N_GPU_LAYERS:-99}
+      - N_GPU_LAYERS=${N_GPU_LAYERS:-auto}
       # ---- Split mode: layer (default), row, none ----
       - SPLIT_MODE=${SPLIT_MODE:-layer}
       # ---- Manual tensor split ratio (blank = use --fit auto) ----

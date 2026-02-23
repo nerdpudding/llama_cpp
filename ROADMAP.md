@@ -8,9 +8,9 @@ Five models are configured in `models.conf` and selectable via `./start.sh` on a
 - **GLM-4.7 Flash Q8_0** — ~105 t/s, 128K context, higher quality reasoning and tool calling
 - **GPT-OSS 120B F16** — ~21 t/s, 128K context, deep reasoning, knowledge, structured output
 - **Qwen3-Coder-Next UD-Q5_K_XL** — ~28 t/s, 256K context, coding agents, agentic tasks
-- **Qwen3-Next-80B-A3B UD-Q5_K_XL** — ~28 t/s, 262K context, general-purpose reasoning, knowledge, agentic tasks, ultra-long context
+- **Qwen3-Next-80B-A3B UD-Q5_K_XL** — ~33 t/s, 262K context, general-purpose reasoning, knowledge, agentic tasks, ultra-long context
 
-All models are MoE. GPU placement uses optimized `-ot` regex configurations for per-layer tensor placement. See `docs/gpu-strategy-guide.md` for the decision tree and `docs/bench-test-results.md` for measured performance data. Latest EvalPlus HumanEval+ scores are in `benchmarks/evalplus/results/REPORT.md`.
+All models are MoE. GPU placement uses `--fit` with `--n-gpu-layers auto` — FIT automatically distributes layers and expert tensors across CUDA0, CUDA1, and CPU RAM. See `docs/gpu-strategy-guide.md` for details and `docs/bench-test-results.md` for historical performance data. Latest EvalPlus HumanEval+ scores are in `benchmarks/evalplus/results/REPORT.md`.
 
 **Monitoring dashboard:** `start.sh` launches the container in the background, waits for server health, and opens a Python curses TUI (`dashboard.py`) with four panels: server logs (scrollable), per-GPU VRAM/utilization/power/temp monitoring, system stats (CPU/RAM/swap/container), and keyboard controls (`q` stop & exit, `r` stop & return to menu, `m` open model picker). The dashboard survives container restarts — model switching happens inside the TUI without returning to the shell. A management API runs on port 8081 (`GET /models`, `GET /status`, `POST /switch`) for programmatic model switching by agents and external tools. Use `--no-dashboard` for raw log output.
 
@@ -42,13 +42,12 @@ All models are MoE. GPU placement uses optimized `-ot` regex configurations for 
 - All bench profiles optimized: reduced context (16K→10K), smaller batch sizes (-b 512 -ub 512), more GPU layers
 - OOM tested all profiles, documented results in `docs/bench-test-results.md`
 
-### Production profile optimization (2026-02-16)
-- All production profiles optimized with explicit GPU layer placement and `-b 2048 -ub 512`
-- Key discovery: `-ub` (micro-batch) determines compute buffer VRAM — switching to `-ub 512` freed 449-2000 MiB per GPU
-- GLM Q4: Strategy A (single GPU), ~142.7 t/s
-- GLM Q8: Strategy C (33+14=47/47), ~103.8 t/s
-- GPT-OSS 120B: Strategy D (11+4=15/36), ~20.7 t/s
-- Qwen3 UD-Q5: Strategy D (17+8=25/48), ~27.9 t/s (+8% from 25.8)
+### Production profile optimization (2026-02-16, revised 2026-02-23)
+- Key discovery (2026-02-16): `-ub` (micro-batch) determines compute buffer VRAM — switching to `-ub 512` freed 449-2000 MiB per GPU
+- Initial approach: explicit `-ot` GPU layer placement with `FIT=off` and `N_GPU_LAYERS=99`
+- Revised approach (2026-02-23): converted ALL profiles to `--fit` with `--n-gpu-layers auto` after discovering hardcoded `N_GPU_LAYERS=99` prevented FIT from working (issue #19816)
+- FIT auto handles GPU/CPU distribution automatically, including MoE expert offload
+- Qwen3-Next result: 32.9 t/s at 262K context with FIT (vs 26.5 t/s with manual -ot) and 55 graph splits (vs 136)
 - Documented in `docs/gpu-strategy-guide.md` and `docs/lessons_learned.md`
 
 ### Documentation consolidation and model selection (2026-02-16)

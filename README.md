@@ -1,10 +1,10 @@
 # Docker Wrapper for llama.cpp
 
-Custom llama.cpp Docker build optimized for a dual-GPU desktop with asymmetric VRAM, targeting large MoE models that require precise GPU/CPU tensor placement.
+Custom llama.cpp Docker build optimized for a dual-GPU desktop with asymmetric VRAM, targeting large MoE models with automatic GPU/CPU tensor placement via `--fit`.
 
 I use AI broadly — from running language models and generating images to speech recognition and agentic coding workflows (more on that in the [DGX Spark comparison article](docs/dgx-spark-comparison.md)). For local LLM inference I used [Ollama](https://ollama.com/) for a long time and it does a great job: easy model management, clean API, simple GPU offloading via GGUF. But as my projects moved toward larger models, agentic flows, and tighter hardware optimization, I kept running into limits. I wanted precise per-layer GPU/CPU placement across two GPUs with different VRAM sizes, access to the latest llama.cpp features as soon as they land, and control over build flags targeting my specific GPU architectures. Ollama's goal is simplicity — which it does well — but that means it doesn't expose these lower-level controls and sometimes lags behind on newer llama.cpp features.
 
-So I went back to [llama.cpp](https://github.com/ggml-org/llama.cpp) — a high-performance C/C++ inference engine for running LLMs locally using quantized GGUF models. It supports CPU and GPU inference (CUDA, Metal, Vulkan), can split model layers across multiple GPUs and CPU RAM, and is the engine that Ollama itself is built on. It has come a long way since I last looked at it: it now includes its own web UI, an OpenAI-compatible API, and fine-grained multi-GPU control via per-layer tensor overrides. What it doesn't have is a convenient way to manage multiple model configurations, switch between them, or monitor what your hardware is doing while a model runs. That's what this wrapper adds:
+So I went back to [llama.cpp](https://github.com/ggml-org/llama.cpp) — a high-performance C/C++ inference engine for running LLMs locally using quantized GGUF models. It supports CPU and GPU inference (CUDA, Metal, Vulkan), can split model layers across multiple GPUs and CPU RAM, and is the engine that Ollama itself is built on. It has come a long way since I last looked at it: it now includes its own web UI, an OpenAI-compatible API, and automatic multi-GPU placement via `--fit` (which handles GPU and CPU distribution, including MoE expert offloading). What it doesn't have is a convenient way to manage multiple model configurations, switch between them, or monitor what your hardware is doing while a model runs. That's what this wrapper adds:
 
 - **Dockerized build** — compiles llama.cpp from source with hardware-specific CUDA flags, making the setup reproducible and isolated
 - **Model selector** (`start.sh`) — interactive menu to pick a model, each with its own optimized GPU layer split, sampler defaults, and context size stored in `models.conf`
@@ -17,7 +17,7 @@ llama.cpp itself provides the inference engine, web UI, and API. Everything else
 
 **What's next:** Since the API is OpenAI-compatible, this setup can serve as a local backend for coding assistants like Claude Code, Continue.dev, and aider, personal AI assistants like [OpenClaw](https://github.com/openclaw/openclaw), or any other tool that speaks the OpenAI API — using your own hardware instead of (or alongside) cloud APIs. That integration is the main next step. Model switching is already available — the management API (`POST /switch` on port 8081) lets agents and external tools switch the active model programmatically. See the [Roadmap](ROADMAP.md) for details.
 
-**Who is this for?** Anyone interested in llama.cpp, GPU utilization strategies for local inference, and also to some extent: how to use Claude Code agents and skills to develop and maintain a project like this. It's also a working reference for how different model architectures (MoE vs dense) need different GPU placement strategies, and includes documentation on those trade-offs. **However — this is not a plug-and-play installer.** The Docker build **compiles llama.cpp for specific GPU architectures** (sm_89 + sm_120), and **all model configurations are tuned and tested for my exact hardware**. You can absolutely adapt it to your own setup, but you'll need to **adjust GPU layers, tensor overrides, and possibly build flags**. The detailed docs are there to help with that.
+**Who is this for?** Anyone interested in llama.cpp, GPU utilization strategies for local inference, and also to some extent: how to use Claude Code agents and skills to develop and maintain a project like this. It's also a working reference for how different model architectures (MoE vs dense) behave with automatic GPU placement (`--fit`), and includes documentation on those trade-offs. **However — this is not a plug-and-play installer.** The Docker build **compiles llama.cpp for specific GPU architectures** (sm_89 + sm_120), and **all model configurations are tuned and tested for my exact hardware**. You can absolutely adapt it to your own setup, but you'll need to **adjust GPU layers and possibly build flags**. The detailed docs are there to help with that.
 
 ## Table of Contents
 
@@ -122,7 +122,7 @@ All models are MoE (Mixture of Experts) and defined in `models.conf`. Use the se
 | `glm-flash-exp` | GLM-4.7 Flash Q8_0 (experimental) | ~105 t/s | 128K | Experimental |
 | `gpt-oss-120b` | GPT-OSS 120B F16 | ~21 t/s | 128K | Deep reasoning, knowledge |
 | `qwen3-coder-ud-q5` | Qwen3-Coder-Next UD-Q5_K_XL | ~28 t/s | 256K | Coding agents |
-| `qwen3-next-ud-q5` | Qwen3-Next-80B-A3B UD-Q5_K_XL | ~28 t/s | 262K | General reasoning, ultra-long context |
+| `qwen3-next-ud-q5` | Qwen3-Next-80B-A3B UD-Q5_K_XL | ~33 t/s | 262K | General reasoning, ultra-long context |
 
 ### Sampler settings
 
@@ -206,7 +206,7 @@ Models being evaluated for potential addition. Model cards are in `models/docume
 
 | File | Purpose |
 |------|---------|
-| `models.conf` | Server config: model paths, GPU layers, context size, sampler defaults, `-ot` tensor overrides |
+| `models.conf` | Server config: model paths, context size, sampler defaults, `--fit` GPU placement |
 | `docker-compose.yml` | Docker container config, GPU device mapping, volume mounts |
 | `benchmarks/evalplus/bench-client.conf` | Benchmark client config: system prompts, reasoning levels per model |
 | `.env` | Auto-generated by `start.sh` from `models.conf` — never edit manually |

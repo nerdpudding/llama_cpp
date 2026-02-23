@@ -2,6 +2,8 @@
 
 Reference for distributing model layers across GPUs and CPU.
 
+> **Status update (2026-02-23):** The recommended approach changed from explicit `-ot` layer assignments to `--fit` with `--n-gpu-layers auto`. FIT automatically distributes layers across CUDA0, CUDA1, and CPU — including MoE expert offload. The old `-ot` approach is documented below for reference but is no longer used in `models.conf`. See [issue #19816](https://github.com/ggml-org/llama.cpp/issues/19816) for the discovery that motivated this change and `docs/lessons_learned.md` lesson #7 for the root cause (hardcoded `N_GPU_LAYERS=99` prevented FIT from working).
+
 ## Why this matters
 
 Large language models often don't fit on a single GPU. Getting them to run well
@@ -26,10 +28,9 @@ involves three steps, in this order:
 - [Hardware](#hardware)
 - [Decision tree](#decision-tree)
 - [Strategies](#strategies)
-  - [A: Single GPU](#strategy-a-single-gpu)
-  - [B: Tensor split (dense)](#strategy-b-tensor-split-dense)
-  - [C: Selective GPU split (MoE)](#strategy-c-selective-gpu-split-moe)
-  - [D: GPU + CPU offload (MoE)](#strategy-d-gpu--cpu-offload-moe)
+  - [A: Single GPU (current)](#strategy-a-single-gpu-current)
+  - [FIT: Automatic multi-GPU placement (current)](#strategy-fit-automatic-multi-gpu-placement-current)
+  - [B, C, D: Manual placement (historical)](#strategy-b-tensor-split--strategy-c--d-manual--ot-placement-historical)
 - [Multi-GPU performance](#multi-gpu-performance)
   - [How layer-split execution works](#how-layer-split-execution-works)
   - [Graph splits](#graph-splits)
@@ -72,28 +73,34 @@ Check actual file size (`ls -lh`), then add:
 ```
 Does the model fit on CUDA0 alone?
 ├── YES → Strategy A (single GPU, fastest)
+│         EXTRA_ARGS: --split-mode none --main-gpu 0
 │
-└── NO → Does it fit on CUDA0 + CUDA1 combined?
-         ├── YES, dense → Strategy B (tensor split)
-         ├── YES, MoE  → Strategy C (selective GPU split)
-         └── NO         → Strategy D (GPU + CPU offload)
+└── NO → Use FIT auto (current standard approach)
+         FIT automatically distributes across CUDA0 + CUDA1 + CPU.
+         No -ot, no N_GPU_LAYERS=99, no FIT=off needed.
 ```
 
 The core principle: **keep everything on GPU when possible.** GPU memory bandwidth
 (~1 TB/s) is 30x faster than PCIe to CPU (~32 GB/s). Only offload to CPU when
-GPU VRAM is genuinely insufficient.
+GPU VRAM is genuinely insufficient. FIT applies this principle automatically.
 
 ## Strategies
 
-All strategies use `FIT=off`. FIT auto-distributes for fit, not for speed — it
-ignores graph splits, bandwidth, and display overhead. Use explicit placement.
+**Current approach (2026-02-23 onward): use `--fit` for all profiles.** FIT is
+on by default in docker-compose.yml and handles GPU/CPU distribution automatically.
+`--n-gpu-layers auto` (also default) lets FIT decide how many layers go to GPU.
 
-### Strategy A: Single GPU
+The old `-ot` explicit placement approach required `FIT=off` and `N_GPU_LAYERS=99`.
+It was replaced after discovering that `N_GPU_LAYERS=99` prevents FIT from working
+(see issue #19816). The old strategies (C and D) are documented below for reference
+and historical context, but are not used in current `models.conf` profiles.
+
+### Strategy A: Single GPU (current)
 
 All weights on the 4090. No inter-device transfers, no graph split overhead.
+FIT is on (default), but `--split-mode none` prevents distribution to CUDA1.
 
 ```
-FIT=off
 EXTRA_ARGS=... --split-mode none --main-gpu 0
 ```
 
@@ -103,52 +110,54 @@ EXTRA_ARGS=... --split-mode none --main-gpu 0
 **When:** total VRAM footprint < ~23 GB.
 **Example:** GLM-4.7-Flash Q4_K_M at 10K context (~17.5 GB).
 
-### Strategy B: Tensor split (dense)
+### Strategy FIT: Automatic multi-GPU placement (current)
 
-Dense model across both GPUs using proportional distribution.
-
-```
-FIT=off
-EXTRA_ARGS=... --tensor-split 3,1
-```
-
-`--tensor-split 3,1` = 75% CUDA0, 25% CUDA1. Adjust ratio after testing.
-
-**When:** dense model > 23 GB.
-
-### Strategy C: Selective GPU split (MoE)
-
-MoE model that fits across both GPUs. Use `-ot` regex to assign layers explicitly.
-No `exps=CPU` — all experts stay on GPU.
+FIT distributes layers across CUDA0, CUDA1, and CPU based on available VRAM.
+For MoE models where total weights exceed GPU VRAM, FIT automatically offloads
+expert tensors to CPU while keeping attention layers on GPU.
 
 ```
-FIT=off
+# No special flags needed — FIT=on and --n-gpu-layers auto are defaults
+EXTRA_ARGS=... --jinja -np 1 <sampler flags>
+```
+
+**When:** any model that needs more than one device (dense or MoE).
+**Result (Qwen3-Next 262K):** 32.9 t/s, 55 graph splits, CUDA0 ~20 GB,
+CUDA1 ~8 GB, CPU ~53 GB experts. Outperforms the old manual `-ot` approach
+(26.5 t/s, 136 graph splits) for the same model.
+
+### Strategy B: Tensor split / Strategy C & D: Manual -ot placement (historical)
+
+These approaches are documented below for reference only. They required `FIT=off`
+and explicit `-ot` regex rules. They are no longer used because FIT auto produces
+equal or better results without the complexity and without the N_GPU_LAYERS=99 bug.
+
+**Strategy B — Dense model across both GPUs:**
+```
+# Historical — not used in current profiles
+EXTRA_ARGS=... --tensor-split 3,1    # 75% CUDA0, 25% CUDA1
+```
+
+**Strategy C — MoE model across both GPUs (all experts on GPU):**
+```
+# Historical — not used in current profiles
 EXTRA_ARGS=... -ot blk\.RANGE0\.=CUDA0,blk\.RANGE1\.=CUDA1
 ```
 
-**When:** MoE model where total weights fit in combined GPU VRAM (~36.5 GB usable).
-**Example:** GLM-4.7-Flash Q8_0 (30 GB, 47 layers → 35 on CUDA0, 12 on CUDA1).
-
-### Strategy D: GPU + CPU offload (MoE)
-
-MoE model exceeding total GPU VRAM. Attention stays on GPU, expert weights for
-overflow layers go to CPU via `exps=CPU`.
-
+**Strategy D — MoE model with CPU expert offload:**
 ```
-FIT=off
+# Historical — not used in current profiles
 EXTRA_ARGS=... -ot blk\.RANGE0\.=CUDA0,blk\.RANGE1\.=CUDA1,exps=CPU
 ```
 
-**How `-ot` priority works:** rules are evaluated left to right, first match wins.
-Layers matching CUDA0/CUDA1 rules keep ALL tensors (attention + experts) on GPU.
-For remaining layers, `exps=CPU` offloads expert weights while `-ngl 99` keeps
-attention on GPU.
+**How `-ot` priority works (for reference):** rules are evaluated left to right,
+first match wins. Layers matching CUDA0/CUDA1 rules kept ALL tensors (attention
++ experts) on GPU. For remaining layers, `exps=CPU` offloaded expert weights
+while `-ngl 99` kept attention on GPU.
 
 Why experts specifically? Experts are used partially per token (e.g., 4/64 = 6%
 for GLM). Attention is used every token. So when you must offload something,
-experts cost the least performance.
-
-**When:** GPT-OSS 120B, Qwen3-Coder-Next, any MoE model > 36.5 GB.
+experts cost the least performance. FIT applies the same logic automatically.
 
 ## Multi-GPU performance
 
@@ -190,6 +199,10 @@ There is no formula for this — you have to test and check the logs.
 
 ### Tuning a multi-GPU split
 
+**Note:** With `--fit` (current default), the split is handled automatically.
+The guidance below applies if you are tuning a manual `-ot` split for historical
+reference, or researching how FIT behaves.
+
 **Goal:** fewest graph splits + most layers on fastest GPU.
 
 These two goals can conflict (as the example shows), so:
@@ -202,6 +215,8 @@ These two goals can conflict (as the example shows), so:
 
 For MoE models, certain split points produce cleaner boundaries than others.
 This depends on the specific model architecture and is not predictable in advance.
+FIT with auto placement produced 55 graph splits on Qwen3-Next vs 136 with the
+manual `-ot` configuration — a significant improvement.
 
 ## Reference
 

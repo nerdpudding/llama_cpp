@@ -3,8 +3,8 @@
 ## Model switching and dashboard decoupling
 
 Goal: switch models without leaving the dashboard, like Ollama but with our
-optimized per-model GPU configs. The wrapper should make the complex `-ot`
-setup feel simple to use.
+optimized per-model GPU configs. Each model has its own FIT-based GPU placement
+config in `models.conf` — the wrapper makes this feel simple to use.
 
 ### Requirements
 - [x] Make a plan: research current dashboard/container coupling, explore
@@ -16,7 +16,7 @@ setup feel simple to use.
       placement and speed are correct per model
 
 ### Design constraints
-- Each model has its own `-ot` regex, context size, and GPU layer config
+- Each model has its own context size, FIT GPU placement, and sampler config
   in `models.conf` — switching must apply the full profile, not just the
   model file
 - Dashboard must stay running during switches and show loading progress
@@ -38,3 +38,15 @@ setup feel simple to use.
 - Waiting for `ggml_set_inplace` → `ggml_set` fix to merge into master
 - Running patched `ed4837891` locally
 - Check: https://github.com/ggml-org/llama.cpp/issues/19816
+- Note: patch is no longer load-bearing — migrated to FIT auto (no `-ot`)
+
+## Completed today
+
+### FIT auto migration (2026-02-23)
+- [x] Discovered `N_GPU_LAYERS=99` in Dockerfile/docker-compose prevented FIT
+      from working — FIT OOM'd because it tried to put 99 layers on GPU
+- [x] Changed `N_GPU_LAYERS=auto` in Dockerfile and docker-compose.yml
+- [x] Converted ALL models.conf profiles from `-ot` GPU splits to FIT auto
+      (removed FIT=off, N_GPU_LAYERS=99, all `-ot` GPU device assignments)
+- [x] Tested Qwen3-Next with FIT auto at 262K: 32.9 t/s (vs 26.5 t/s), 55 graph splits (vs 136)
+- [x] Updated all documentation to reflect new GPU strategy

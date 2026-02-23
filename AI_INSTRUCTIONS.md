@@ -2,7 +2,7 @@
 
 ## Project overview
 
-Custom llama.cpp Docker build for a dual-GPU desktop (RTX 4090 24GB + RTX 5070 Ti 16GB). Serves large MoE models via llama-server with precise GPU/CPU tensor placement using `-ot` regex overrides. Includes an EvalPlus HumanEval+ benchmark pipeline.
+Custom llama.cpp Docker build for a dual-GPU desktop (RTX 4090 24GB + RTX 5070 Ti 16GB). Serves large MoE models via llama-server with automatic GPU/CPU tensor placement using `--fit`. Includes an EvalPlus HumanEval+ benchmark pipeline.
 
 ## Principles
 
@@ -96,7 +96,7 @@ For non-trivial changes, follow this order:
 
 ## GPU strategy
 
-Before making any GPU placement decisions (layer splits, FIT, -ot, --tensor-split):
+Before making any GPU placement decisions:
 
 1. **Read the model card** in `models/documentation/`. Verify dense vs MoE, expert count, active parameters.
 2. **Check actual file sizes** with `ls -lh`. Never estimate from quantization names.
@@ -104,9 +104,11 @@ Before making any GPU placement decisions (layer splits, FIT, -ot, --tensor-spli
 4. **Document reasoning** in models.conf comments, including architecture source.
 
 Key principles:
-- If the model fits entirely on GPU, keep everything on GPU. `exps=CPU` is a trade-off for when VRAM is insufficient, not a MoE default.
-- Fill CUDA0 (4090, fastest) first, then CUDA1 (5070 Ti), then CPU.
-- `FIT=off` for any manual placement. FIT auto-distributes and doesn't handle expert/attention priorities.
+- **Use `--fit` (on by default) with `--n-gpu-layers auto` (on by default).** FIT automatically distributes layers across CUDA0, CUDA1, and CPU — including MoE expert offload. This is now the standard approach for all profiles.
+- Do NOT use `-ot` for GPU device assignments (e.g., `blk.X=CUDA0`). Using `-ot exps=CPU` with `FIT=off` and hardcoded `N_GPU_LAYERS=99` was the old approach; it prevented FIT from working correctly (see issue #19816).
+- For single-GPU models (Strategy A), use `--split-mode none --main-gpu 0` in EXTRA_ARGS to keep the model on CUDA0 only.
+- If the model fits entirely on GPU, FIT keeps everything on GPU automatically. `exps=CPU` is only needed when VRAM is insufficient, and FIT handles that too.
+- See `docs/gpu-strategy-guide.md` for the updated decision tree and `docs/lessons_learned.md` for the history of this change.
 
 See also: `docs/lessons_learned.md` for common mistakes and prevention rules.
 
@@ -128,7 +130,7 @@ Use agents when their role matches the task. Don't reinvent what an agent alread
 
 | Agent | When to use |
 |-------|-------------|
-| `gpu-optimizer` | GPU placement, `-ot` regex, models.conf profiles, OOM diagnosis, layer splits |
+| `gpu-optimizer` | GPU placement, `--fit` / `--n-gpu-layers`, models.conf profiles, OOM diagnosis, layer splits |
 | `model-manager` | Download/organize/verify models, quantization advice |
 | `benchmark` | EvalPlus HumanEval+ benchmarks, performance comparison |
 | `builder` | Docker image builds, llama.cpp updates, Dockerfile changes |

@@ -7,6 +7,13 @@ which uses default batch size), --cache-type-k q8_0 --cache-type-v q8_0.
 > showed UD-Q5_K_XL is both faster (30 vs 24 t/s) and higher scoring (93.9% vs 92.1%
 > HumanEval). UD-Q6 data below is historical.
 
+> **GPU placement note (2026-02-23):** All results below were measured with the old
+> `-ot` explicit layer assignment approach (`FIT=off`, `N_GPU_LAYERS=99`). All bench
+> profiles were converted to `--fit` with `--n-gpu-layers auto` on 2026-02-23.
+> Speeds and VRAM usage may differ under FIT auto. A re-benchmark is needed to
+> update these figures — see `benchmarks/evalplus/results/REPORT.md` for current
+> scores (benchmark scores are unaffected by GPU placement changes).
+
 ## Hardware
 
 - CUDA0: RTX 4090 (24 GB) — nothing else running
