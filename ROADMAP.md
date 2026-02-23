@@ -4,10 +4,10 @@
 
 Five models are configured in `models.conf` and selectable via `./start.sh` on a dual-GPU desktop (RTX 4090 + RTX 5070 Ti):
 
-- **GLM-4.7 Flash Q4_K_M** — ~140 t/s, 128K context, fast general tasks, reasoning, tool calling
-- **GLM-4.7 Flash Q8_0** — ~105 t/s, 128K context, higher quality reasoning and tool calling
-- **GPT-OSS 120B F16** — ~21 t/s, 128K context, deep reasoning, knowledge, structured output
-- **Qwen3-Coder-Next UD-Q5_K_XL** — ~28 t/s, 256K context, coding agents, agentic tasks
+- **GLM-4.7 Flash Q4_K_M** — ~147 t/s, 128K context, fast general tasks, reasoning, tool calling
+- **GLM-4.7 Flash Q8_0** — ~112 t/s, 128K context, higher quality reasoning and tool calling
+- **GPT-OSS 120B F16** — ~22 t/s, 128K context, deep reasoning, knowledge, structured output
+- **Qwen3-Coder-Next UD-Q5_K_XL** — ~33 t/s, 256K context, coding agents, agentic tasks
 - **Qwen3-Next-80B-A3B UD-Q5_K_XL** — ~33 t/s, 262K context, general-purpose reasoning, knowledge, agentic tasks, ultra-long context
 
 All models are MoE. GPU placement uses `--fit` with `--n-gpu-layers auto` — FIT automatically distributes layers and expert tensors across CUDA0, CUDA1, and CPU RAM. See `docs/gpu-strategy-guide.md` for details and `docs/bench-test-results.md` for historical performance data. Latest EvalPlus HumanEval+ scores are in `benchmarks/evalplus/results/REPORT.md`.

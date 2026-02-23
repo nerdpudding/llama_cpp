@@ -8,9 +8,9 @@ Quick reference for recommended client-side settings per model. Use these when c
 
 | Model | Best for | Thinking | Tool calling | Speed |
 |-------|----------|----------|-------------|-------|
-| GLM-4.7 Flash | General tasks, reasoning, tool calling | Yes (`<think>` blocks) | Yes (native) | 105-140 t/s |
-| GPT-OSS 120B | Deep reasoning, knowledge, structured output | Yes (configurable low/med/high) | Yes (native) | ~21 t/s |
-| Qwen3-Coder-Next | Coding agents, agentic tasks | No | Yes (native) | ~28 t/s |
+| GLM-4.7 Flash | General tasks, reasoning, tool calling | Yes (`<think>` blocks) | Yes (native) | 112-147 t/s |
+| GPT-OSS 120B | Deep reasoning, knowledge, structured output | Yes (configurable low/med/high) | Yes (native) | ~22 t/s |
+| Qwen3-Coder-Next | Coding agents, agentic tasks | No | Yes (native) | ~33 t/s |
 | Qwen3-Next-80B-A3B | General reasoning, knowledge, agentic, ultra-long context | No | Yes (native) | ~33 t/s |
 
 ## Sampler settings at a glance

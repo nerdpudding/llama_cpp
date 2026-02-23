@@ -75,8 +75,13 @@ services:
       - KV_CACHE_TYPE_V=${KV_CACHE_TYPE_V:-q8_0}
       # ---- Auto-fit (on by default, adjusts layers/ctx to fit VRAM) ----
       - FIT=${FIT:-on}
-      # ---- Fit target: VRAM headroom in MiB per device (e.g. 1024 or 512,4096) ----
-      - FIT_TARGET=${FIT_TARGET:-}
+      # ---- Fit target: VRAM headroom in MiB per device ----
+      # Single value applies to all devices equally (e.g. 1024).
+      # Comma-separated for per-device control (e.g. 128,1024 for 2 GPUs).
+      # For asymmetric setups: use a small value for dedicated GPUs and a larger
+      # value for GPUs that share VRAM with the OS/display stack.
+      # Example: 128,1024 = 128 MiB for dedicated CUDA0, 1024 MiB for CUDA1 (display)
+      - FIT_TARGET=${FIT_TARGET:-128,1024}
       # ---- Fit minimum context size ----
       - FIT_CTX=${FIT_CTX:-}
       # ---- Extra flags (pass anything not covered above) ----

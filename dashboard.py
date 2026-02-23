@@ -73,7 +73,7 @@ def ctx_label(ctx):
 class ModelProfile:
     """A model profile parsed from models.conf."""
     __slots__ = ('id', 'name', 'description', 'speed', 'model', 'ctx_size',
-                 'n_gpu_layers', 'fit', 'extra_args', 'is_bench')
+                 'n_gpu_layers', 'fit', 'fit_target', 'extra_args', 'is_bench')
 
     def __init__(self, profile_id):
         self.id = profile_id
@@ -84,6 +84,7 @@ class ModelProfile:
         self.ctx_size = ""
         self.n_gpu_layers = ""
         self.fit = ""
+        self.fit_target = ""
         self.extra_args = ""
         self.is_bench = profile_id.startswith("bench-")
 
@@ -125,6 +126,8 @@ def parse_models_conf(path):
                     current.n_gpu_layers = value
                 elif key == 'FIT':
                     current.fit = value
+                elif key == 'FIT_TARGET':
+                    current.fit_target = value
                 elif key == 'EXTRA_ARGS':
                     current.extra_args = value
 
@@ -438,6 +441,8 @@ class Dashboard:
                 f.write(f"N_GPU_LAYERS={profile.n_gpu_layers}\n")
             if profile.fit:
                 f.write(f"FIT={profile.fit}\n")
+            if profile.fit_target:
+                f.write(f"FIT_TARGET={profile.fit_target}\n")
             if profile.extra_args:
                 f.write(f"EXTRA_ARGS={profile.extra_args}\n")
 

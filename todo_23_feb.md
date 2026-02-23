@@ -50,3 +50,17 @@ config in `models.conf` — the wrapper makes this feel simple to use.
       (removed FIT=off, N_GPU_LAYERS=99, all `-ot` GPU device assignments)
 - [x] Tested Qwen3-Next with FIT auto at 262K: 32.9 t/s (vs 26.5 t/s), 55 graph splits (vs 136)
 - [x] Updated all documentation to reflect new GPU strategy
+
+### FIT_TARGET tuning for asymmetric GPU setup (2026-02-23)
+- [x] Discovered `FIT_TARGET` per-device is important for asymmetric GPU setups
+      (CUDA0 dedicated, CUDA1 shares with display)
+- [x] Set `FIT_TARGET=128,1024` as default in `docker-compose.yml`
+      (128 MiB margin for CUDA0, 1024 MiB for CUDA1/display)
+- [x] Final measured speeds after tuning:
+      - GLM Q4: ~147 t/s (was ~140)
+      - GLM Q8: ~112 t/s, 5 graph splits (was ~105 t/s, 33 splits)
+      - GPT-OSS 120B: ~22 t/s (was ~21 t/s)
+      - Qwen3-Coder-Next: ~33 t/s (was ~28 t/s)
+      - Qwen3-Next: ~33 t/s (was ~27 t/s)
+- [x] Updated README, ROADMAP, gpu-strategy-guide, known_issue doc, lessons_learned,
+      client-settings, gpu-optimizer agent, docker-compose.example.yml

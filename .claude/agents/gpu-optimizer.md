@@ -44,6 +44,22 @@ Follow the decision tree in `docs/gpu-strategy-guide.md` step by step:
    - **FIT auto** — model needs multiple devices → no special flags needed; `--fit` and `--n-gpu-layers auto` are defaults in docker-compose.yml and Dockerfile. FIT distributes layers and offloads MoE experts to CPU automatically.
    - Do NOT use `-ot` for GPU device assignments (`blk.X=CUDA0` etc.). Do NOT set `FIT=off` or `N_GPU_LAYERS=99`.
 
+**FIT_TARGET tuning (asymmetric GPU setups):** `FIT_TARGET` controls the VRAM
+headroom FIT reserves per device before placing tensors. For setups where one GPU
+is dedicated and another shares with the OS/display stack, use a per-device value:
+
+```yaml
+# In docker-compose.yml:
+FIT_TARGET=${FIT_TARGET:-128,1024}
+# 128 MiB = CUDA0 (RTX 4090, dedicated — minimal margin needed)
+# 1024 MiB = CUDA1 (RTX 5070 Ti, shares ~3 GB with display)
+```
+
+A uniform conservative default wastes headroom on the dedicated GPU, pushing
+tensors to CPU unnecessarily. Per-device tuning is especially impactful for MoE
+models where expert placement is sensitive to available VRAM. See lesson #8 in
+`docs/lessons_learned.md` for measured impact.
+
 5. **Generate models.conf entry** with documented reasoning in comments.
 
 ### Create untested production profile (new model)
@@ -116,11 +132,11 @@ For MoE models where experts exceed GPU VRAM, FIT automatically offloads expert
 tensors to CPU while keeping attention layers on GPU — the same logic that `-ot
 exps=CPU` implemented manually, but handled automatically and more effectively.
 
-Result on Qwen3-Next (53 GB) at 262K context:
+Result on Qwen3-Next (53 GB) at 262K context (with FIT_TARGET=128,1024):
 - CUDA0: ~20 GB (attention + some experts)
 - CUDA1: ~8 GB (attention + some experts)
 - CPU: ~53 GB (overflow experts)
-- Speed: 32.9 t/s, 55 graph splits
+- Speed: ~33 t/s, 55 graph splits
 
 ## Model reference
 

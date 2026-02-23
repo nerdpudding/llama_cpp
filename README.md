@@ -117,11 +117,11 @@ All models are MoE (Mixture of Experts) and defined in `models.conf`. Use the se
 
 | Section ID | Model | Speed | Context | Best for |
 |------------|-------|-------|---------|----------|
-| `glm-flash-q4` | GLM-4.7 Flash Q4_K_M | ~140 t/s | 128K | Fast tasks, reasoning |
-| `glm-flash-q8` | GLM-4.7 Flash Q8_0 | ~105 t/s | 128K | Quality reasoning, tools |
-| `glm-flash-exp` | GLM-4.7 Flash Q8_0 (experimental) | ~105 t/s | 128K | Experimental |
-| `gpt-oss-120b` | GPT-OSS 120B F16 | ~21 t/s | 128K | Deep reasoning, knowledge |
-| `qwen3-coder-ud-q5` | Qwen3-Coder-Next UD-Q5_K_XL | ~28 t/s | 256K | Coding agents |
+| `glm-flash-q4` | GLM-4.7 Flash Q4_K_M | ~147 t/s | 128K | Fast tasks, reasoning |
+| `glm-flash-q8` | GLM-4.7 Flash Q8_0 | ~112 t/s | 128K | Quality reasoning, tools |
+| `glm-flash-exp` | GLM-4.7 Flash Q8_0 (experimental) | ~112 t/s | 128K | Experimental |
+| `gpt-oss-120b` | GPT-OSS 120B F16 | ~22 t/s | 128K | Deep reasoning, knowledge |
+| `qwen3-coder-ud-q5` | Qwen3-Coder-Next UD-Q5_K_XL | ~33 t/s | 256K | Coding agents |
 | `qwen3-next-ud-q5` | Qwen3-Next-80B-A3B UD-Q5_K_XL | ~33 t/s | 262K | General reasoning, ultra-long context |
 
 ### Sampler settings

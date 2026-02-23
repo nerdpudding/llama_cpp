@@ -122,9 +122,22 @@ EXTRA_ARGS=... --jinja -np 1 <sampler flags>
 ```
 
 **When:** any model that needs more than one device (dense or MoE).
-**Result (Qwen3-Next 262K):** 32.9 t/s, 55 graph splits, CUDA0 ~20 GB,
+**Result (Qwen3-Next 262K):** ~33 t/s, 55 graph splits, CUDA0 ~20 GB,
 CUDA1 ~8 GB, CPU ~53 GB experts. Outperforms the old manual `-ot` approach
 (26.5 t/s, 136 graph splits) for the same model.
+
+**Important for asymmetric GPU setups:** Use `FIT_TARGET` to tune the VRAM
+headroom margin per device. The default `FIT_TARGET` is a single value applied
+to all devices equally. On this hardware (CUDA0 dedicated, CUDA1 shares with
+OS/display), `FIT_TARGET=128,1024` is set as the default in `docker-compose.yml`:
+- `128` MiB headroom for CUDA0 (RTX 4090) — dedicated GPU, nothing else running
+- `1024` MiB headroom for CUDA1 (RTX 5070 Ti) — shares ~3 GB with OS/display
+
+This per-device setting allows FIT to use more of the dedicated GPU's VRAM.
+Without it, the uniform default was too conservative for CUDA0, leaving VRAM unused
+and pushing layers to CPU unnecessarily. Example impact on GLM-4.7 Flash Q8:
+- Without tuned FIT_TARGET: ~105 t/s, 33 graph splits
+- With FIT_TARGET=128,1024: ~112 t/s, 5 graph splits
 
 ### Strategy B: Tensor split / Strategy C & D: Manual -ot placement (historical)
 
@@ -190,18 +203,25 @@ boundary by even 1-2 layers can significantly change the split count because the
 scheduler maps operations to backends differently depending on where the cut falls.
 There is no formula for this — you have to test and check the logs.
 
-#### Measured example: GLM-4.7-Flash Q8 (Strategy C)
+#### Measured example: GLM-4.7-Flash Q8 (historical manual splits vs FIT auto)
 
-| Split (CUDA0 + CUDA1) | Graph splits | Speed | Result |
-|------------------------|-------------|-------|--------|
-| 35 + 12 | 33 | ~105 t/s | Sweet spot |
-| 37 + 10 | 53 | ~102 t/s | Slower — 20 extra splits outweigh faster GPU benefit |
+The table below shows historical manual `-ot` split data (Strategy C, now superseded)
+alongside the current FIT auto result for comparison.
+
+| Configuration | Graph splits | Speed | Notes |
+|---------------|-------------|-------|-------|
+| Manual `-ot`: 35 CUDA0 + 12 CUDA1 | 33 | ~105 t/s | Former sweet spot (Strategy C) |
+| Manual `-ot`: 37 CUDA0 + 10 CUDA1 | 53 | ~102 t/s | Slower — extra splits outweigh GPU benefit |
+| FIT auto, default FIT_TARGET | 33 | ~105 t/s | FIT matched manual result |
+| FIT auto, FIT_TARGET=128,1024 | 5 | ~112 t/s | Current default — fewer splits, faster |
 
 ### Tuning a multi-GPU split
 
 **Note:** With `--fit` (current default), the split is handled automatically.
-The guidance below applies if you are tuning a manual `-ot` split for historical
-reference, or researching how FIT behaves.
+The primary tuning knob for FIT is `FIT_TARGET` — set per-device headroom in
+`docker-compose.yml` to match your hardware's actual available VRAM. See the
+Strategy FIT section above for the asymmetric GPU example. The guidance below
+applies if you are tuning a manual `-ot` split for historical reference.
 
 **Goal:** fewest graph splits + most layers on fastest GPU.
 

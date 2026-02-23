@@ -223,3 +223,36 @@ on GPU before FIT could decide to offload, causing the OOM.
   variable is overriding the auto behavior.
 - When a feature "doesn't work", check for env var overrides before concluding
   the feature is broken.
+
+---
+
+## 8. Used uniform FIT_TARGET on asymmetric GPU hardware
+
+**What happened:** After migrating to FIT auto, production speeds were good but
+not optimal. GLM Q8 had 33 graph splits even with FIT. After testing with a tuned
+`FIT_TARGET=128,1024`, speeds improved across all models and GLM Q8 dropped from
+33 to 5 graph splits.
+
+**Root cause:** `FIT_TARGET` sets the VRAM headroom FIT reserves per device before
+placing tensors. The default was either unset or a single uniform value. On this
+hardware:
+- CUDA0 (RTX 4090) is a dedicated compute GPU — nothing else uses its VRAM
+- CUDA1 (RTX 5070 Ti) shares VRAM with the OS/display stack (~3 GB consumed)
+
+A uniform conservative margin wastes headroom on CUDA0 while being appropriate
+for CUDA1. With `FIT_TARGET=128,1024`, CUDA0 gets a minimal 128 MiB margin
+(enough for safety, not more) and CUDA1 gets 1024 MiB to account for display.
+
+**Measured impact:**
+- GLM Q4: ~140 → ~147 t/s
+- GLM Q8: ~105 t/s / 33 splits → ~112 t/s / 5 splits
+- GPT-OSS 120B: ~21 → ~22 t/s
+- Qwen3-Coder-Next: ~28 → ~33 t/s
+- Qwen3-Next: ~27 → ~33 t/s
+
+**Prevention rule:** For asymmetric GPU setups where one GPU is dedicated and
+another shares with display/OS, always set `FIT_TARGET` as a comma-separated
+per-device list in `docker-compose.yml`. Use a small margin for dedicated GPUs
+(128-256 MiB) and a larger margin for GPUs that share with the display stack
+(1024+ MiB, depending on the display workload). See `docs/gpu-strategy-guide.md`
+for the current hardware configuration.

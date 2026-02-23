@@ -96,7 +96,7 @@ Initial tests used `N_GPU_LAYERS=99` (then-current docker-compose default):
 | `-ot exps=CPU` with `--fit on` | 99 | Works | ~21.7 t/s | GPUs barely used (~1.6 GB total) |
 | `-ts 21,10 -ot exps=CPU` | 99 | Works | ~19.8 t/s | Same problem: GPUs barely used |
 | `--fit on` without `-ot` | 99 | **OOM** | — | 53 GB model > 40 GB total GPU |
-| `--fit on` without `-ot` | **auto** | **Works** | **~32.9 t/s** | **FIT offloads experts to CPU automatically** |
+| `--fit on` without `-ot` | **auto** | **Works** | **~32.9 t/s** | **FIT offloads experts to CPU automatically** (initial test, default FIT_TARGET) |
 
 **Revised conclusion (2026-02-23):** The initial OOM with `--fit on` without `-ot`
 was caused by `N_GPU_LAYERS=99` overriding FIT's automatic layer count calculation.
@@ -105,9 +105,21 @@ before FIT could offload experts to CPU. Changing to `--n-gpu-layers auto` (whic
 lets FIT decide) resolved the issue.
 
 With `--fit on` and `--n-gpu-layers auto`, Qwen3-Next at 262K achieves:
-- 32.9 t/s (vs 26.5 t/s with manual `-ot`)
+- ~33 t/s (vs 26.5 t/s with manual `-ot`); initial test showed 32.9 t/s with default FIT_TARGET
 - 55 graph splits (vs 136 with manual `-ot`)
 - CUDA0 ~20 GB, CUDA1 ~8 GB, CPU ~53 GB experts
+
+**Final tuning (2026-02-23):** After setting `FIT_TARGET=128,1024` in
+`docker-compose.yml` (128 MiB headroom for dedicated CUDA0, 1024 MiB for CUDA1
+which shares with display), all models improved:
+- GLM Q4: ~147 t/s (vs ~140 with default FIT_TARGET)
+- GLM Q8: ~112 t/s, 5 graph splits (vs ~105 t/s, 33 graph splits)
+- GPT-OSS 120B: ~22 t/s (vs ~21 t/s)
+- Qwen3-Coder-Next: ~33 t/s (vs ~28 t/s)
+- Qwen3-Next: ~33 t/s (vs ~27 t/s)
+
+Per-device FIT_TARGET is important for asymmetric GPU setups where one GPU is
+dedicated and the other shares VRAM with the OS/display stack.
 
 This is significantly better than the manual `-ot` approach in both speed and
 graph splits. All profiles were converted to FIT auto on 2026-02-23.
