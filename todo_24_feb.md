@@ -7,9 +7,11 @@ sandbox). See `docs/decisions/2026-02-24_claude-code-local-setup.md` for full
 analysis.
 
 ### Phase 4: Dual-instance setup + sandboxing
-- [ ] Install bubblewrap and socat (`sudo apt install bubblewrap socat`)
-- [ ] Create `~/.claude-local/` with minimal settings.json for the local instance
-- [ ] Create `claude-local` wrapper script (replaces `test/run.sh`)
+- [x] Install bubblewrap and socat (`sudo apt install bubblewrap socat`)
+- [x] Create `~/.claude-local/` with settings.json, CLAUDE.md, and skills
+- [x] Create `claude-local/` repo folder with wrapper script, install.sh, README
+- [x] Remove old `test/run.sh` (replaced by `claude-local/bin/claude-local`)
+- [x] Remove `defaultMode: "plan"` from global settings and skill
 - [ ] Test: start local session, verify it connects to llama-server, check no
       OAuth credential conflict
 - [ ] Activate `/sandbox` in local session, verify:

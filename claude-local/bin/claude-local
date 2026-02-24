@@ -1,0 +1,22 @@
+#!/bin/bash
+# Claude Code with local llama-server backend
+# Requires: llama-server running on localhost:8080
+#           bubblewrap + socat installed (for /sandbox)
+#
+# Source of truth: <repo>/claude-local/bin/claude-local
+# Installed to: ~/bin/claude-local
+# See claude-local/README.md for setup instructions.
+
+# Save original HOME before overriding (used to construct the path)
+REAL_HOME="$HOME"
+
+export HOME="$REAL_HOME/.claude-local"
+export ANTHROPIC_BASE_URL=http://127.0.0.1:8080
+export ANTHROPIC_AUTH_TOKEN=llamacpp
+export ANTHROPIC_API_KEY=""
+export ANTHROPIC_MODEL=glm-flash-q4
+export ANTHROPIC_SMALL_FAST_MODEL=glm-flash-q4
+export CLAUDE_CODE_DISABLE_NONESSENTIAL_TRAFFIC=1
+
+# Pass through any arguments (e.g. --model qwen3-coder-ud-q5)
+exec claude "$@"

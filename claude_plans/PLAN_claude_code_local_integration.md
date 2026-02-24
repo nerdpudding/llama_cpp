@@ -114,57 +114,86 @@ for proxy-based network filtering). Both are required for Claude Code's built-in
 
 #### Step 4.2: Create local Claude Code home directory
 
-Create `~/.claude-local/` with a minimal `settings.json`:
+Create `~/.claude-local/` with:
+
+**`settings.json`** — matches the global settings (env, timeouts, plansDirectory,
+alwaysThinkingEnabled) but without `model: "opus"` (not applicable locally):
 
 ```json
 {
-  "$schema": "https://json-schema.org/claude-code-settings.json",
-  "permissions": {
-    "defaultMode": "plan"
-  }
+  "$schema": "https://json.schemastore.org/claude-code-settings.json",
+  "env": {
+    "DISABLE_TELEMETRY": "1",
+    "DISABLE_ERROR_REPORTING": "1",
+    "BASH_DEFAULT_TIMEOUT_MS": "300000",
+    "BASH_MAX_TIMEOUT_MS": "600000"
+  },
+  "alwaysThinkingEnabled": true,
+  "plansDirectory": "./claude_plans"
 }
 ```
 
-**Why:** This gives the local instance its own configuration space, separate from
-`~/.claude/`. The `plan` default mode ensures all actions require approval — extra
-important with less capable local models. No CLAUDE.md is needed here (the
-project-level config is sufficient, and global preferences do not apply to the
-experimental instance).
+**`CLAUDE.md`** — copy of `~/.claude/CLAUDE.md` with a "Local Instance Notice"
+section prepended, warning that the backing model is less capable than Opus and to
+be extra cautious with destructive actions.
 
-**Who:** Can be done together (Claude Code creates the directory and file).
+**`skills/project-setup/SKILL.md`** — copy of the global `/project-setup` skill,
+adapted for local paths (`~/.claude-local/` instead of `~/.claude/`) and without
+`model: "opus"` in the Phase 0 verification block.
 
-#### Step 4.3: Create `claude-local` wrapper script
+**Why:** Since `HOME` is overridden to `~/.claude-local/`, Claude Code looks for all
+global config (settings, CLAUDE.md, skills) there instead of `~/.claude/`. Everything
+that should be available globally needs to exist in this directory.
 
-Replace `test/run.sh` with a proper wrapper script (location TBD — either project
-root or `~/bin/`):
+**Testing note:** `alwaysThinkingEnabled` is kept on, but needs testing with local
+models. Some models support thinking/reasoning blocks, others do not. If llama-server
+does not handle the thinking parameter gracefully for non-thinking models, this
+setting may need to be turned off or made per-model.
 
-```bash
-#!/bin/bash
-# Claude Code with local llama-server backend
-# Requires: llama-server running on localhost:8080
-#           bubblewrap + socat installed (for /sandbox)
+**Deviations from original plan:**
+1. `defaultMode: "plan"` was dropped — plan mode is overly restrictive for normal
+   work (blocks edits, forces plan workflow). The standard Claude Code behavior
+   already requires approval for bash commands and file writes, which is sufficient.
+2. CLAUDE.md and skills were added — the original plan said "No CLAUDE.md is needed
+   here" but since `HOME` is overridden, the global CLAUDE.md and skills at
+   `~/.claude/` are not visible to the local instance. Copies are needed for
+   preferences and skills to apply.
+3. `defaultMode: "plan"` was also removed from the global `~/.claude/settings.json`
+   — standard ask-mode behavior is preferred over forced plan mode.
 
-export HOME="$HOME/.claude-local"
-export ANTHROPIC_BASE_URL=http://127.0.0.1:8080
-export ANTHROPIC_AUTH_TOKEN=llamacpp
-export ANTHROPIC_API_KEY=""
-export ANTHROPIC_MODEL=glm-flash-q4
-export ANTHROPIC_SMALL_FAST_MODEL=glm-flash-q4
-export CLAUDE_CODE_DISABLE_NONESSENTIAL_TRAFFIC=1
+**Who:** Done (Claude Code created the directory and files).
 
-# Pass through any arguments (e.g. --model qwen3-coder-ud-q5)
-exec claude "$@"
+#### Step 4.3: Create `claude-local` wrapper script and repo folder
+
+All local instance files are stored in the repo under `claude-local/`:
+
+```
+claude-local/
+├── README.md              # Setup and usage instructions
+├── install.sh             # Copies files to ~/.claude-local/ and ~/bin/
+├── bin/
+│   └── claude-local       # Wrapper script (installed to ~/bin/)
+└── home/                  # Config files (installed to ~/.claude-local/)
+    ├── CLAUDE.md
+    ├── settings.json
+    └── skills/
+        └── project-setup/
+            └── SKILL.md
 ```
 
-**Why:** A single entry point that sets all required environment variables. The
-script uses `exec` so it replaces the shell process (clean PID, proper signal
-handling). Arguments are passed through so `--model` and other flags still work.
+The wrapper script sets environment variables and runs `claude` with `HOME` pointed
+at `~/.claude-local/`. Installation: run `./claude-local/install.sh` to copy files
+to the right places, or copy manually (see `claude-local/README.md`).
 
-**Who:** Can be done together (Claude Code creates the script).
+The old `test/run.sh` has been removed — replaced by `claude-local/bin/claude-local`.
 
-**Note:** The HOME path is constructed from the original HOME before overriding it,
-so it resolves to `/home/rvanpolen/.claude-local` regardless of where the script
-is run from.
+**Deviation from original plan:** The original plan specified a single wrapper script
+in `~/bin/` or project root. Instead, a full `claude-local/` folder was created in
+the repo containing the wrapper, config files, install script, and documentation.
+This ensures everything is version-controlled and reproducible on a new machine via
+`git clone` + `./install.sh`.
+
+**Who:** Done (Claude Code created all files, old test/run.sh removed).
 
 #### Step 4.4: Test basic functionality
 
