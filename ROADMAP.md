@@ -69,13 +69,12 @@ All models are MoE. GPU placement uses `--fit` with `--n-gpu-layers auto` — FI
 - Uses specialized agents (model-manager, gpu-optimizer, benchmark, doc-keeper) at each phase
 - Candidate models listed in README under "Adding New Models"
 
-## In Progress
-
-### Claude Code ↔ local llama.cpp integration (2026-02-23)
-- Phases 1-3 done: Anthropic Messages API verified in build, tested with curl, Claude Code successfully connected to local GLM Flash Q4 (chat + tool use working)
-- **Decision made:** Separate `claude-local` instance with its own HOME (credential isolation) + bubblewrap sandbox (filesystem/privilege restriction). See `docs/decisions/2026-02-24_claude-code-local-setup.md`
-- Next: Phase 4 (install bubblewrap, create dual-instance setup, test sandbox), Phase 5 (convenience scripts, management API integration), Phase 6 (architecture.md, README restructure, documentation)
-- Plan: `claude_plans/PLAN_claude_code_local_integration.md`
+### Claude Code ↔ local llama.cpp integration (2026-02-23 — 2026-02-24)
+- **Phase 1-3:** Anthropic Messages API verified, Claude Code connected to local GLM Flash Q4, chat + tool use confirmed
+- **Phase 4:** `claude-local` wrapper with `CLAUDE_CONFIG_DIR` isolation, bubblewrap sandbox tested (bash restricted, Write/Edit tools not sandboxed — Claude Code limitation), VS Code IDE integration working via symlink workaround
+- **Phase 5:** Pre-flight health check in wrapper, management API model switching works mid-session (context preserved), recommended workflow documented
+- **Phase 6:** Architecture document (`docs/architecture.md`), README updated, documentation consolidated
+- Setup: `claude-local/README.md` | Decision: `docs/decisions/2026-02-24_claude-code-local-setup.md`
 
 ## Future
 
@@ -90,6 +89,13 @@ All models are MoE. GPU placement uses `--fit` with `--n-gpu-layers auto` — FI
 ### claude-local convenience improvements
 - Auto-start llama-server from `claude-local` wrapper: if the server is not running, open `start.sh` in a new terminal, let the user pick a model, wait for server health, then start Claude Code. Requires solving: repo path detection (wrapper can run from anywhere), terminal emulator detection (gnome-terminal, xterm, etc.).
 - Investigate `/resume` issue — serialization error when resuming sessions with `CLAUDE_CONFIG_DIR`. Test in isolated setup (standalone project, no concurrent sessions) to narrow down the cause.
+- Investigate sandbox localhost whitelist — currently sandbox blocks all bash network access including localhost, which prevents management API calls (`POST /switch`) from within a sandboxed session. Check if bubblewrap or Claude Code's sandbox config supports whitelisting specific ports or addresses.
+
+### Automatic model switching in claude-local
+- Enable claude-local to automatically switch the locally loaded llama.cpp model based on the task at hand. For example: switch to Qwen3-Coder for code generation, GPT-OSS for deep reasoning — all within the same claude-local session, using the llama.cpp management API (`POST /switch` on port 8081).
+- Currently model switching works manually (dashboard `m` key, or bash curl to the management API). The goal is to automate this via a skill or agent that decides which local model fits the current task and triggers the switch.
+- Requires deeper understanding of how Claude Code handles model routing internally, and how to gracefully handle the ~15-30s server downtime during a model switch.
+- Foundation already proven: management API works from within claude-local, session survives the switch, conversation context is preserved for the new model.
 
 ### Extended benchmarks
 - Add benchmarks for tasks beyond coding (reasoning, instruction following, tool calling)

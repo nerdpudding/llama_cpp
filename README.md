@@ -15,9 +15,19 @@ So I went back to [llama.cpp](https://github.com/ggml-org/llama.cpp) — a high-
 
 llama.cpp itself provides the inference engine, web UI, and API. Everything else listed above is part of this wrapper. The goal is simple: get the most out of my hardware in terms of model quality, speed, and context length.
 
-**What's next:** Since llama.cpp now supports the Anthropic Messages API natively, this setup can serve as a local backend for Claude Code and other tools that speak the Anthropic or OpenAI API — using your own hardware instead of (or alongside) cloud APIs. Initial testing with Claude Code is working (chat and tool use confirmed). The sandboxing approach has been decided: a separate `claude-local` instance with its own HOME directory for credential isolation, plus bubblewrap (Claude Code's built-in `/sandbox`) for filesystem and privilege restriction. Implementation of this dual-instance setup is next. Integration with Continue.dev, aider, and [OpenClaw](https://github.com/openclaw/openclaw) is planned after that. Model switching is already available — the management API (`POST /switch` on port 8081) lets agents and external tools switch the active model programmatically. See the [Roadmap](ROADMAP.md) for details and [the decision document](docs/decisions/2026-02-24_claude-code-local-setup.md) for the full analysis.
+**Claude Code local integration:** Since llama.cpp supports the Anthropic Messages API natively, this setup works as a local backend for Claude Code. The `claude-local` command starts a separate Claude Code instance that connects to the local llama-server instead of the Anthropic cloud. Chat, tool use, thinking, VS Code IDE integration, and bubblewrap sandboxing are all working. Models can be switched mid-session via the management API without losing conversation context. See [`claude-local/README.md`](claude-local/README.md) for setup and usage, and [`docs/architecture.md`](docs/architecture.md) for how all components fit together.
 
-**Who is this for?** Anyone interested in llama.cpp, GPU utilization strategies for local inference, and also to some extent: how to use Claude Code agents and skills to develop and maintain a project like this. It's also a working reference for how different model architectures (MoE vs dense) behave with automatic GPU placement (`--fit`), and includes documentation on those trade-offs. **However — this is not a plug-and-play installer.** The Docker build **compiles llama.cpp for specific GPU architectures** (sm_89 + sm_120), and **all model configurations are tuned and tested for my exact hardware**. You can absolutely adapt it to your own setup, but you'll need to **adjust GPU layers and possibly build flags**. The detailed docs are there to help with that.
+**What's next:** Automatic model switching within claude-local (agent decides which local model fits the task) is a future goal. Integration with other tools (Continue.dev, aider, [OpenClaw](https://github.com/openclaw/openclaw)) is on the [Roadmap](ROADMAP.md) but not planned for the short term.
+
+**Who is this for?** Anyone interested in:
+- **Local LLM inference with llama.cpp** — multi-GPU setup with automatic tensor placement (`--fit`), model profiles, monitoring dashboard, and management API
+- **Running Claude Code with local models** — the `claude-local` integration shows how to connect Claude Code to a local llama-server, including sandboxing, VS Code integration, and mid-session model switching
+- **Model benchmarking** — EvalPlus HumanEval+ pipeline for comparing local models against each other and proprietary references
+- **MoE model behavior** — working reference for how different architectures (MoE vs dense) behave with automatic GPU placement across asymmetric GPUs
+
+For a guide on setting up Claude Code itself (agents, skills, project workflows), see the separate [Claude Code Setup](https://github.com/nerdpudding/claude_code_setup) repository.
+
+**This is not a plug-and-play installer.** The Docker build **compiles llama.cpp for specific GPU architectures** (sm_89 + sm_120), and **all model configurations are tuned and tested for specific hardware** (RTX 4090 + RTX 5070 Ti). It can be adapted to other setups, but GPU layers and build flags will need adjusting. The detailed docs are there to help with that.
 
 ## Table of Contents
 
@@ -242,6 +252,8 @@ See [ROADMAP.md](ROADMAP.md) for current status, completed milestones, and futur
 - **[DGX Spark Comparison](docs/dgx-spark-comparison.md)** — DGX Spark vs desktop analysis for local LLM inference
 - **[Lessons Learned](docs/lessons_learned.md)** — Common mistakes and prevention rules
 - **[docker-compose.example.yml](docker-compose.example.yml)** — Annotated compose template with full variable reference
+- **[Architecture Overview](docs/architecture.md)** — C4-style overview of how all components connect (llama-server, dashboard, Claude Code normal vs local, sandboxing, management API)
+- **[Claude Code Local Setup](claude-local/README.md)** — Installation, usage, and safety guide for running Claude Code with a local llama-server backend
 - **[Claude Code Local Setup Decision](docs/decisions/2026-02-24_claude-code-local-setup.md)** — Analysis of isolation options (alias, bubblewrap, Docker) and rationale for the chosen approach
 
 ## Repository Structure
@@ -270,7 +282,13 @@ See [ROADMAP.md](ROADMAP.md) for current status, completed milestones, and futur
 │   ├── extended-benchmarks-research.md    # Research on non-coding benchmarks
 │   ├── alternative_benches_advice.md      # Alternative benchmark options
 │   ├── screenshots/                       # UI screenshots for README
+│   ├── architecture.md                    # C4-style architecture overview
 │   └── decisions/                         # Architecture/design decision records
+├── claude-local/                  # Claude Code local instance setup
+│   ├── README.md                  # Installation, usage, and safety guide
+│   ├── install.sh                 # Copies config to ~/.claude-local/ and ~/bin/
+│   ├── bin/claude-local           # Wrapper script
+│   └── home/                      # Config files (CLAUDE.md, settings.json, skills)
 ├── models/                        # GGUF files (gitignored)
 │   ├── .gitkeep
 │   ├── documentation/             # Model cards (README from HuggingFace)

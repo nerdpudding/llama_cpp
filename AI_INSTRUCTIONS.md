@@ -39,6 +39,8 @@ For non-trivial changes, follow this order:
 ├── docker-compose.yml                # Production compose file
 ├── docker-compose.example.yml        # Annotated template with usage instructions
 ├── .env.example                      # Generic template with all variables documented
+├── .dockerignore
+├── .gitignore
 ├── docs/                             # Technical documentation
 │   ├── gpu-strategy-guide.md           # ** GPU placement decision tree — read before configuring models **
 │   ├── client-settings.md              # ** Recommended client-side sampler settings per model **
@@ -48,6 +50,7 @@ For non-trivial changes, follow this order:
 │   ├── claude_tips.md                  # Claude Code usage tips
 │   ├── extended-benchmarks-research.md # Research on non-coding benchmarks
 │   ├── alternative_benches_advice.md   # Alternative benchmark options
+│   ├── architecture.md                  # C4-style architecture overview — how all components connect
 │   ├── screenshots/                    # UI screenshots for README
 │   └── decisions/                      # Architecture/design decision records
 │       ├── 2026-02-24_claude-code-local-setup.md     # Decision: Claude Code local setup (Option A+B)
@@ -85,6 +88,11 @@ For non-trivial changes, follow this order:
 │       ├── reference-scores.json     # Published proprietary model scores
 │       └── results/                  # Benchmark outputs (gitignored)
 │           └── REPORT.md             # ** Latest EvalPlus HumanEval+ results — authoritative **
+├── claude-local/                     # Claude Code local instance setup
+│   ├── README.md                     # ** Installation, usage, safety guide — read for local setup **
+│   ├── install.sh                    # Copies config to ~/.claude-local/ and ~/bin/
+│   ├── bin/claude-local              # Wrapper script (pre-flight check, env vars, launches claude)
+│   └── home/                         # Config files (CLAUDE.md, settings.json, skills)
 ├── claude_plans/                     # Active plans (see Plan rules below)
 ├── archive/                          # Archived plans, old docs, superseded files
 ├── llama.cpp/                        # llama.cpp source (separate git repo, gitignored)
