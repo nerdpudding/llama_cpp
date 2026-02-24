@@ -73,8 +73,8 @@ All models are MoE. GPU placement uses `--fit` with `--n-gpu-layers auto` — FI
 
 ### Claude Code ↔ local llama.cpp integration (2026-02-23)
 - Phases 1-3 done: Anthropic Messages API verified in build, tested with curl, Claude Code successfully connected to local GLM Flash Q4 (chat + tool use working)
-- **Blocker:** HOME-based isolation insufficient — Claude Code traverses parent directories and picks up project config. Need proper sandboxing (Claude Code `/sandbox`, Docker, or combination) before it can be used safely
-- Next: Phase 4 (sandboxing), then convenience setup and documentation
+- **Decision made:** Separate `claude-local` instance with its own HOME (credential isolation) + bubblewrap sandbox (filesystem/privilege restriction). See `docs/decisions/2026-02-24_claude-code-local-setup.md`
+- Next: Phase 4 (install bubblewrap, create dual-instance setup, test sandbox), Phase 5 (convenience scripts, management API integration), Phase 6 (architecture.md, README restructure, documentation)
 - Plan: `claude_plans/PLAN_claude_code_local_integration.md`
 
 ## Future

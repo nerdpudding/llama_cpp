@@ -1,5 +1,7 @@
 # Overleg: Claude Code Local Setup — 24 februari 2026
 
+**Besluit: Optie A + B gecombineerd (shell alias met apart HOME + bubblewrap sandbox)**
+
 ## Waar staan de dingen nu?
 
 ### Wat er al gebouwd is

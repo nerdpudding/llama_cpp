@@ -48,7 +48,10 @@ For non-trivial changes, follow this order:
 │   ├── claude_tips.md                  # Claude Code usage tips
 │   ├── extended-benchmarks-research.md # Research on non-coding benchmarks
 │   ├── alternative_benches_advice.md   # Alternative benchmark options
-│   └── screenshots/                    # UI screenshots for README
+│   ├── screenshots/                    # UI screenshots for README
+│   └── decisions/                      # Architecture/design decision records
+│       ├── 2026-02-24_claude-code-local-setup.md     # Decision: Claude Code local setup (Option A+B)
+│       └── 2026-02-24_claude-code-local-setup_NL.md  # Same document in Dutch
 ├── models/                           # GGUF model files (gitignored)
 │   ├── documentation/                # Model cards from HuggingFace
 │   │   ├── CANDIDATES/               # Model cards for potential future models

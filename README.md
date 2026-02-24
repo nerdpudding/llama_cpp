@@ -15,7 +15,7 @@ So I went back to [llama.cpp](https://github.com/ggml-org/llama.cpp) — a high-
 
 llama.cpp itself provides the inference engine, web UI, and API. Everything else listed above is part of this wrapper. The goal is simple: get the most out of my hardware in terms of model quality, speed, and context length.
 
-**What's next:** Since llama.cpp now supports the Anthropic Messages API natively, this setup can serve as a local backend for Claude Code and other tools that speak the Anthropic or OpenAI API — using your own hardware instead of (or alongside) cloud APIs. Initial testing with Claude Code is working (chat and tool use confirmed); proper sandboxing is the remaining step before it can be used for real work. Integration with Continue.dev, aider, and [OpenClaw](https://github.com/openclaw/openclaw) is planned after that. Model switching is already available — the management API (`POST /switch` on port 8081) lets agents and external tools switch the active model programmatically. See the [Roadmap](ROADMAP.md) for details.
+**What's next:** Since llama.cpp now supports the Anthropic Messages API natively, this setup can serve as a local backend for Claude Code and other tools that speak the Anthropic or OpenAI API — using your own hardware instead of (or alongside) cloud APIs. Initial testing with Claude Code is working (chat and tool use confirmed). The sandboxing approach has been decided: a separate `claude-local` instance with its own HOME directory for credential isolation, plus bubblewrap (Claude Code's built-in `/sandbox`) for filesystem and privilege restriction. Implementation of this dual-instance setup is next. Integration with Continue.dev, aider, and [OpenClaw](https://github.com/openclaw/openclaw) is planned after that. Model switching is already available — the management API (`POST /switch` on port 8081) lets agents and external tools switch the active model programmatically. See the [Roadmap](ROADMAP.md) for details and [the decision document](docs/decisions/2026-02-24_claude-code-local-setup.md) for the full analysis.
 
 **Who is this for?** Anyone interested in llama.cpp, GPU utilization strategies for local inference, and also to some extent: how to use Claude Code agents and skills to develop and maintain a project like this. It's also a working reference for how different model architectures (MoE vs dense) behave with automatic GPU placement (`--fit`), and includes documentation on those trade-offs. **However — this is not a plug-and-play installer.** The Docker build **compiles llama.cpp for specific GPU architectures** (sm_89 + sm_120), and **all model configurations are tuned and tested for my exact hardware**. You can absolutely adapt it to your own setup, but you'll need to **adjust GPU layers and possibly build flags**. The detailed docs are there to help with that.
 
@@ -242,6 +242,7 @@ See [ROADMAP.md](ROADMAP.md) for current status, completed milestones, and futur
 - **[DGX Spark Comparison](docs/dgx-spark-comparison.md)** — DGX Spark vs desktop analysis for local LLM inference
 - **[Lessons Learned](docs/lessons_learned.md)** — Common mistakes and prevention rules
 - **[docker-compose.example.yml](docker-compose.example.yml)** — Annotated compose template with full variable reference
+- **[Claude Code Local Setup Decision](docs/decisions/2026-02-24_claude-code-local-setup.md)** — Analysis of isolation options (alias, bubblewrap, Docker) and rationale for the chosen approach
 
 ## Repository Structure
 
@@ -268,7 +269,8 @@ See [ROADMAP.md](ROADMAP.md) for current status, completed milestones, and futur
 │   ├── claude_tips.md                     # Claude Code usage tips
 │   ├── extended-benchmarks-research.md    # Research on non-coding benchmarks
 │   ├── alternative_benches_advice.md      # Alternative benchmark options
-│   └── screenshots/                       # UI screenshots for README
+│   ├── screenshots/                       # UI screenshots for README
+│   └── decisions/                         # Architecture/design decision records
 ├── models/                        # GGUF files (gitignored)
 │   ├── .gitkeep
 │   ├── documentation/             # Model cards (README from HuggingFace)
