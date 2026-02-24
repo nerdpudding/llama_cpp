@@ -30,9 +30,11 @@ analysis.
 - [x] Document all findings in claude-local/README.md (onboarding, config, sandbox, safety warnings)
 
 ### Phase 5: Convenience and polish
-- [ ] Final wrapper script with model selection support
-- [ ] Verify management API model switching works from local Claude Code session
-- [ ] Document recommended workflow (when to use which instance)
+- [x] Pre-flight check in wrapper (curl health check before starting claude)
+- [x] Management API model switch works from claude-local session (~17s, session survives, context preserved)
+  - **Note:** requires sandbox off (sandbox blocks bash network)
+- [x] Document recommended workflow: when to use claude vs claude-local, model expectations, model switching
+- Deferred to roadmap: auto-start llama-server from wrapper (opens start.sh in new terminal)
 
 ### Phase 6: Documentation
 - [ ] Create `docs/architecture.md` — C4-style overview of how all components

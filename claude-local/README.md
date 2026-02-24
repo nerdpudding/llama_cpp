@@ -144,6 +144,52 @@ For VS Code integration (diffs shown in editor instead of terminal), start
 `claude-local` from a **VS Code integrated terminal**. Then run `/ide` and select
 Visual Studio Code.
 
+## Switching Models Mid-Session
+
+The management API on port 8081 allows switching the loaded model without restarting
+the Claude Code session. This only works **without sandbox** (sandbox blocks bash
+network access).
+
+```
+curl -X POST http://localhost:8081/switch -H "Content-Type: application/json" -d '{"model":"glm-flash-q4"}'
+```
+
+Or ask the local model to run it. The switch takes ~15-30 seconds (container restart
+and model load). The session stays alive and the conversation history is preserved —
+the new model receives the full context from before the switch.
+
+Available model IDs can be listed with:
+
+```
+curl http://localhost:8081/models
+```
+
+Or switch models via the dashboard (press `m` in the TUI).
+
+## When to Use `claude` vs `claude-local`
+
+| Scenario | Use | Why |
+|----------|-----|-----|
+| Serious coding work, complex refactoring | `claude` | Opus is significantly more capable for multi-step reasoning and agentic tasks |
+| Experimenting with local models | `claude-local` | Test how different models handle tasks, compare quality |
+| Sensitive/private code | `claude-local` | Nothing leaves the machine — all inference is local |
+| Offline or no internet | `claude-local` | Works without any network connection (except localhost) |
+| Learning how models behave | `claude-local` | Verbose output shows thinking blocks, useful for understanding model reasoning |
+| Quick simple tasks | Either | Local models handle straightforward tasks fine |
+
+### What to expect from local models
+
+- **Slower than Opus** for complex tasks — but faster response times for simple
+  questions (no network latency)
+- **Less capable at multi-step reasoning** — complex skills like `/project-setup`
+  may produce errors or need manual intervention
+- **Tool use works** but is less reliable — the model may call tools with wrong
+  parameters or misunderstand tool outputs
+- **Thinking/reasoning varies by model** — some models produce useful thinking
+  blocks, others do not
+- **Always review before approving** — local models are more likely to misinterpret
+  instructions than Opus
+
 ## Sandbox (Security)
 
 The sandbox (`/sandbox`) uses bubblewrap to restrict what **bash commands** can do.
