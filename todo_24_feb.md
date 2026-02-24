@@ -37,17 +37,16 @@ analysis.
 - Deferred to roadmap: auto-start llama-server from wrapper (opens start.sh in new terminal)
 
 ### Phase 6: Documentation
-- [ ] Create `docs/architecture.md` — C4-style overview of how all components
-      connect (wrapper, Docker, llama-server, dashboard, management API, Claude
-      Code normal vs local, sandboxing). Include diagrams and design rationale.
-- [ ] Plan README restructure for user-friendly flow: requirements → install →
-      run a model → use with Claude Code. Quick Start stays concise, detailed
-      guides in `docs/`. Structure defined in the plan — actual rewrite can happen
-      in a later sprint.
-- [ ] Update ROADMAP with Phase 4-6 completion status
-- [ ] Update README "What's next" section
-- [ ] Run doc-keeper consistency check
-- [ ] Archive the integration plan and this todo when complete
+- [x] Create `docs/architecture.md` — C4-style architecture overview
+- [x] Update README: Who is this for, What's next, Documentation links, Repository Structure
+- [x] Update ROADMAP with Phase 4-6 completion status
+- [x] Run doc-keeper consistency check (7 findings, all fixed)
+- [x] Archive the integration plan
+
+### Next: Hands-on testing
+- [ ] Extensive hands-on testing of claude-local as implemented — use it for real
+      tasks, try different models, explore edge cases. Findings and ideas feed into
+      roadmap and future improvements.
 
 ## Ongoing
 
