@@ -22,7 +22,14 @@ an experimental setup for testing local models — the normal Anthropic subscrip
 
 Before installing, make sure the following are available:
 
-1. **Claude Code CLI** (`claude`) — the normal Anthropic Claude Code must be installed
+1. **Claude Code CLI** (`claude`) — install via the native installer (Ubuntu/Debian):
+   ```bash
+   curl -fsSL https://claude.ai/install.sh | sh
+   ```
+   After installation, run `claude` once to complete the OAuth login with an
+   Anthropic subscription (Max or Teams). This sets up the normal `~/.claude/`
+   directory. The local instance does not use these credentials but Claude Code
+   itself needs to be installed first.
 2. **bubblewrap** and **socat** — required for sandboxing:
    ```bash
    sudo apt install bubblewrap socat
@@ -32,8 +39,11 @@ Before installing, make sure the following are available:
    echo 'export PATH="$HOME/bin:$PATH"' >> ~/.bashrc
    source ~/.bashrc
    ```
-4. **llama-server** running on `localhost:8080` — start a model with `./start.sh`
-   from the project root before using `claude-local`
+4. **A local inference server** with Anthropic Messages API support on
+   `localhost:8080`. This setup assumes the llama.cpp Docker wrapper from this
+   repository (start a model with `./start.sh`), but any server that exposes a
+   compatible `/v1/messages` endpoint should work (e.g. Ollama with an Anthropic
+   API adapter). The server must be running before starting `claude-local`.
 
 ## Installation
 
@@ -143,6 +153,9 @@ are less capable than Claude Opus and may misinterpret instructions.
 **How to enable:** Type `/sandbox` → select "Sandbox BashTool, with regular
 permissions" → bash commands now run inside a bubblewrap container.
 
+**Persistent:** The sandbox setting is saved — once enabled, it stays on for all
+future sessions. It does not need to be re-enabled each time.
+
 ### What the sandbox protects
 
 | Action | Result |
@@ -206,7 +219,7 @@ claude-local/
             └── SKILL.md    # /project-setup skill adapted for local instance
 ```
 
-## Known Issues
+## Known Issues and Behavior
 
 - **`CLAUDE_CONFIG_DIR` is not officially documented** by Anthropic. It works in
   practice but could change in future Claude Code versions.
@@ -217,6 +230,26 @@ claude-local/
   directory. No effect on functionality.
 - **Write/Edit tools not sandboxed** — Claude Code's built-in file tools bypass the
   bubblewrap sandbox. See the [security section](#important-what-the-sandbox-does-not-protect).
+- **Sandbox is persistent** — once enabled via `/sandbox`, it stays on for all future
+  sessions (stored in `~/.claude-local/`). This is desirable as a default, but be
+  aware of the following consequences:
+  - **Temporary stub files** appear in the working directory during a session (e.g.
+    `.bashrc`, `.gitconfig`, `HEAD`, `.mcp.json`, `.vscode`, etc.) — these are
+    read-only, 0-byte files created by bubblewrap as part of the sandboxed
+    environment. They are automatically cleaned up when the session ends.
+  - **`/project-setup` Phase 0 will not work** with sandbox active, because it tries
+    to read/write files in `~/.claude-local/` which is outside the workspace. Disable
+    sandbox first (`/sandbox` → "No Sandbox"), run the skill, then re-enable sandbox.
+- **`/resume` may not work** — resuming a previous session has been observed to fail
+  with a serialization error (`The "string" argument must be of type string...`).
+  Not yet clear if this is caused by `CLAUDE_CONFIG_DIR`, running two Claude Code
+  instances simultaneously, or the test-project being inside an existing repo.
+  Needs further testing in an isolated setup.
+- **Local model limitations with skills** — complex multi-step skills (like
+  `/project-setup`) may produce errors or unexpected behavior with local models.
+  Common issues include: Write tool parameter type errors, difficulty reading certain
+  directories, and incorrect agent creation. These are model capability limitations,
+  not configuration problems. Review each action carefully before approving.
 
 ## Updating
 

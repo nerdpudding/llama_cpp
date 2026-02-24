@@ -7,6 +7,15 @@
 # Installed to: ~/bin/claude-local
 # See claude-local/README.md for setup instructions.
 
+# Pre-flight check: is llama-server running?
+if ! curl -s -o /dev/null --connect-timeout 2 http://127.0.0.1:8080/health; then
+    echo "Error: llama-server is not reachable at http://127.0.0.1:8080"
+    echo ""
+    echo "Start a model first with ./start.sh from the llama_cpp project root."
+    echo "Then try again."
+    exit 1
+fi
+
 # Use CLAUDE_CONFIG_DIR instead of HOME override — avoids side effects
 # (missing binary warnings, broken path resolution) while still isolating
 # Claude Code config (settings, CLAUDE.md, skills) from ~/.claude/.

@@ -19,3 +19,4 @@ benchmarks/evalplus/.venv/
 
 # Test sandbox for Claude Code local experiments
 test/
+test-project/

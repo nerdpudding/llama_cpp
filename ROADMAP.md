@@ -87,6 +87,10 @@ All models are MoE. GPU placement uses `--fit` with `--n-gpu-layers auto` — FI
 - Goal: agents can be configured to use local models alongside cloud APIs (e.g. Claude for complex tasks, local model for simpler ones)
 - Foundation: management API (`POST /switch` on port 8081) is already built and tested
 
+### claude-local convenience improvements
+- Auto-start llama-server from `claude-local` wrapper: if the server is not running, open `start.sh` in a new terminal, let the user pick a model, wait for server health, then start Claude Code. Requires solving: repo path detection (wrapper can run from anywhere), terminal emulator detection (gnome-terminal, xterm, etc.).
+- Investigate `/resume` issue — serialization error when resuming sessions with `CLAUDE_CONFIG_DIR`. Test in isolated setup (standalone project, no concurrent sessions) to narrow down the cause.
+
 ### Extended benchmarks
 - Add benchmarks for tasks beyond coding (reasoning, instruction following, tool calling)
 - Regression testing when updating llama.cpp
