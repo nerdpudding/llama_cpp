@@ -7,15 +7,16 @@
 # Installed to: ~/bin/claude-local
 # See claude-local/README.md for setup instructions.
 
-# Save original HOME before overriding (used to construct the path)
-REAL_HOME="$HOME"
+# Use CLAUDE_CONFIG_DIR instead of HOME override — avoids side effects
+# (missing binary warnings, broken path resolution) while still isolating
+# Claude Code config (settings, CLAUDE.md, skills) from ~/.claude/.
+export CLAUDE_CONFIG_DIR="$HOME/.claude-local"
 
-export HOME="$REAL_HOME/.claude-local"
 export ANTHROPIC_BASE_URL=http://127.0.0.1:8080
 export ANTHROPIC_AUTH_TOKEN=llamacpp
 export ANTHROPIC_API_KEY=""
-export ANTHROPIC_MODEL=glm-flash-q4
-export ANTHROPIC_SMALL_FAST_MODEL=glm-flash-q4
+export ANTHROPIC_MODEL=local-llama
+export ANTHROPIC_SMALL_FAST_MODEL=local-llama
 export CLAUDE_CODE_DISABLE_NONESSENTIAL_TRAFFIC=1
 
 # Pass through any arguments (e.g. --model qwen3-coder-ud-q5)

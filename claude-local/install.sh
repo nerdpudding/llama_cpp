@@ -5,7 +5,8 @@
 # What it does:
 #   1. Checks prerequisites (claude, bubblewrap, socat)
 #   2. Copies home/ contents to ~/.claude-local/
-#   3. Copies bin/claude-local to ~/bin/ and ensures ~/bin is in PATH
+#   3. Creates IDE symlink (~/.claude-local/ide → ~/.claude/ide) for VS Code integration
+#   4. Copies bin/claude-local to ~/bin/ and ensures ~/bin is in PATH
 #
 # Re-run this script after updating files in the repo to sync changes.
 
@@ -41,6 +42,26 @@ cp "$SCRIPT_DIR/home/CLAUDE.md" "$TARGET_HOME/CLAUDE.md"
 cp "$SCRIPT_DIR/home/settings.json" "$TARGET_HOME/settings.json"
 cp "$SCRIPT_DIR/home/skills/project-setup/SKILL.md" "$TARGET_HOME/skills/project-setup/SKILL.md"
 echo "  Done."
+
+# Create IDE symlink for VS Code integration
+# The VS Code extension writes lock files to ~/.claude/ide/ (hardcoded).
+# With CLAUDE_CONFIG_DIR, Claude Code looks for them in ~/.claude-local/ide/.
+# Without this symlink, /ide detection fails and diffs open in terminal instead
+# of VS Code. See: https://github.com/anthropics/claude-code/issues/4739
+if [ ! -e "$TARGET_HOME/ide" ]; then
+    if [ -d "$HOME/.claude/ide" ]; then
+        echo "Creating IDE symlink ($TARGET_HOME/ide → $HOME/.claude/ide) ..."
+        ln -s "$HOME/.claude/ide" "$TARGET_HOME/ide"
+        echo "  Done."
+    else
+        echo "Creating IDE directory symlink (will activate when VS Code extension runs) ..."
+        mkdir -p "$HOME/.claude/ide"
+        ln -s "$HOME/.claude/ide" "$TARGET_HOME/ide"
+        echo "  Done."
+    fi
+else
+    echo "IDE symlink already exists, skipping."
+fi
 
 # Copy wrapper script to ~/bin/
 echo "Copying claude-local to $TARGET_BIN/ ..."

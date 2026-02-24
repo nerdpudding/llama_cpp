@@ -12,15 +12,22 @@ analysis.
 - [x] Create `claude-local/` repo folder with wrapper script, install.sh, README
 - [x] Remove old `test/run.sh` (replaced by `claude-local/bin/claude-local`)
 - [x] Remove `defaultMode: "plan"` from global settings and skill
-- [ ] Test: start local session, verify it connects to llama-server, check no
-      OAuth credential conflict
-- [ ] Activate `/sandbox` in local session, verify:
-  - [ ] Can read/write within project workspace
-  - [ ] Cannot write outside workspace
-  - [ ] sudo is blocked (kernel-level via PR_SET_NO_NEW_PRIVS)
-  - [ ] localhost:8080 reachable (llama-server API)
-  - [ ] VS Code IDE integration works (diagnostics via MCP)
-  - [ ] Bash commands require approval (not auto-accepted)
+- [x] Switch from HOME override to CLAUDE_CONFIG_DIR (fixes binary warnings, CLAUDE.md lookup)
+- [x] Add IDE symlink workaround for VS Code integration (issue #4739)
+- [x] Test: start local session, connects to llama-server, no OAuth conflict
+- [x] Test: chat works, tool use works (Glob, Read, Write), thinking blocks visible
+- [x] Test: VS Code IDE integration works (start from VS Code terminal, /ide detects VS Code)
+- [x] Activate `/sandbox` and test:
+  - [x] Can read/write within project workspace
+  - [x] Bash write outside workspace: blocked
+  - [x] Bash sudo: blocked
+  - [x] Bash network (curl): blocked
+  - [x] Bash commands require approval
+  - [x] Claude Code ↔ llama-server API: works (not routed through bash)
+  - **Finding:** Write/Edit tools are NOT sandboxed — can write anywhere. This is a
+    Claude Code design limitation, not specific to the local setup. Documented in
+    claude-local/README.md.
+- [x] Document all findings in claude-local/README.md (onboarding, config, sandbox, safety warnings)
 
 ### Phase 5: Convenience and polish
 - [ ] Final wrapper script with model selection support

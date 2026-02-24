@@ -141,9 +141,15 @@ be extra cautious with destructive actions.
 adapted for local paths (`~/.claude-local/` instead of `~/.claude/`) and without
 `model: "opus"` in the Phase 0 verification block.
 
-**Why:** Since `HOME` is overridden to `~/.claude-local/`, Claude Code looks for all
-global config (settings, CLAUDE.md, skills) there instead of `~/.claude/`. Everything
-that should be available globally needs to exist in this directory.
+**Why:** The wrapper uses `CLAUDE_CONFIG_DIR=~/.claude-local` (instead of overriding
+`HOME`) to point Claude Code at a separate config directory. This avoids side effects
+of the HOME override (missing binary warnings, broken path resolution). Claude Code
+reads settings, CLAUDE.md, and skills from `CLAUDE_CONFIG_DIR` instead of `~/.claude/`.
+
+**IDE symlink:** The VS Code extension writes lock files to `~/.claude/ide/`
+(hardcoded), but with `CLAUDE_CONFIG_DIR` set, Claude Code looks for them in
+`~/.claude-local/ide/`. A symlink `~/.claude-local/ide/ → ~/.claude/ide/` is needed
+for VS Code integration to work. See https://github.com/anthropics/claude-code/issues/4739
 
 **Testing note:** `alwaysThinkingEnabled` is kept on, but needs testing with local
 models. Some models support thinking/reasoning blocks, others do not. If llama-server
@@ -155,11 +161,16 @@ setting may need to be turned off or made per-model.
    work (blocks edits, forces plan workflow). The standard Claude Code behavior
    already requires approval for bash commands and file writes, which is sufficient.
 2. CLAUDE.md and skills were added — the original plan said "No CLAUDE.md is needed
-   here" but since `HOME` is overridden, the global CLAUDE.md and skills at
-   `~/.claude/` are not visible to the local instance. Copies are needed for
-   preferences and skills to apply.
+   here" but `CLAUDE_CONFIG_DIR` points to a separate directory, so the global
+   CLAUDE.md and skills at `~/.claude/` are not visible. Copies are needed.
 3. `defaultMode: "plan"` was also removed from the global `~/.claude/settings.json`
    — standard ask-mode behavior is preferred over forced plan mode.
+4. `HOME` override replaced with `CLAUDE_CONFIG_DIR` — initial testing showed that
+   overriding HOME caused side effects: Claude Code looked for its own binary in
+   `~/.claude-local/.local/bin/` (not found), and CLAUDE.md was not read from the
+   overridden HOME. `CLAUDE_CONFIG_DIR` isolates only the config directory.
+5. IDE symlink added — required workaround for VS Code integration with
+   `CLAUDE_CONFIG_DIR` (issue #4739).
 
 **Who:** Done (Claude Code created the directory and files).
 
