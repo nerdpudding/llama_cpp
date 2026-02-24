@@ -1,49 +1,60 @@
 # Docker Wrapper for llama.cpp
 
-Custom llama.cpp Docker build optimized for a dual-GPU desktop with asymmetric VRAM, targeting large MoE models with automatic GPU/CPU tensor placement via `--fit`.
-
-I use AI broadly — from running language models and generating images to speech recognition and agentic coding workflows (more on that in the [DGX Spark comparison article](docs/dgx-spark-comparison.md)). For local LLM inference I used [Ollama](https://ollama.com/) for a long time and it does a great job: easy model management, clean API, simple GPU offloading via GGUF. But as my projects moved toward larger models, agentic flows, and tighter hardware optimization, I kept running into limits. I wanted precise per-layer GPU/CPU placement across two GPUs with different VRAM sizes, access to the latest llama.cpp features as soon as they land, and control over build flags targeting my specific GPU architectures. Ollama's goal is simplicity — which it does well — but that means it doesn't expose these lower-level controls and sometimes lags behind on newer llama.cpp features.
-
-So I went back to [llama.cpp](https://github.com/ggml-org/llama.cpp) — a high-performance C/C++ inference engine for running LLMs locally using quantized GGUF models. It supports CPU and GPU inference (CUDA, Metal, Vulkan), can split model layers across multiple GPUs and CPU RAM, and is the engine that Ollama itself is built on. It has come a long way since I last looked at it: it now includes its own web UI, an OpenAI-compatible API, and automatic multi-GPU placement via `--fit` (which handles GPU and CPU distribution, including MoE expert offloading). What it doesn't have is a convenient way to manage multiple model configurations, switch between them, or monitor what your hardware is doing while a model runs. That's what this wrapper adds:
-
-- **Dockerized build** — compiles llama.cpp from source with hardware-specific CUDA flags, making the setup reproducible and isolated
-- **Model selector** (`start.sh`) — interactive menu to pick a model, each with its own optimized GPU layer split, sampler defaults, and context size stored in `models.conf`
-- **Monitoring dashboard** (`dashboard.py`) — curses TUI showing server logs, per-GPU VRAM/utilization/temperature, and system stats while a model runs; includes an in-dashboard model picker (`m` key) and a management API on port 8081 for switching models programmatically
-- **Benchmarking** — EvalPlus HumanEval+ runner to compare local models against each other and against proprietary references
-- **Model onboarding** — `/add-model` skill with agent-assisted workflow for evaluating, configuring, and benchmarking new models (built for [Claude Code](https://claude.com/claude-code), but the approach could be adapted for other AI-assisted development tools)
-- **Documentation** — GPU placement strategies, sampler settings per model, lessons learned, and hardware comparison research
-
-llama.cpp itself provides the inference engine, web UI, and API. Everything else listed above is part of this wrapper. The goal is simple: get the most out of my hardware in terms of model quality, speed, and context length.
-
-**Claude Code local integration:** Since llama.cpp supports the Anthropic Messages API natively, this setup works as a local backend for Claude Code. The `claude-local` command starts a separate Claude Code instance that connects to the local llama-server instead of the Anthropic cloud. Chat, tool use, thinking, VS Code IDE integration, and bubblewrap sandboxing are all working. Models can be switched mid-session via the management API without losing conversation context. See [`claude-local/README.md`](claude-local/README.md) for setup and usage, and [`docs/architecture.md`](docs/architecture.md) for how all components fit together.
-
-**What's next:** Automatic model switching within claude-local (agent decides which local model fits the task) is a future goal. Integration with other tools (Continue.dev, aider, [OpenClaw](https://github.com/openclaw/openclaw)) is on the [Roadmap](ROADMAP.md) but not planned for the short term.
-
-**Who is this for?** Anyone interested in:
-- **Local LLM inference with llama.cpp** — multi-GPU setup with automatic tensor placement (`--fit`), model profiles, monitoring dashboard, and management API
-- **Running Claude Code with local models** — the `claude-local` integration shows how to connect Claude Code to a local llama-server, including sandboxing, VS Code integration, and mid-session model switching
-- **Model benchmarking** — EvalPlus HumanEval+ pipeline for comparing local models against each other and proprietary references
-- **MoE model behavior** — working reference for how different architectures (MoE vs dense) behave with automatic GPU placement across asymmetric GPUs
-
-For a guide on setting up Claude Code itself (agents, skills, project workflows), see the separate [Claude Code Setup](https://github.com/nerdpudding/claude_code_setup) repository.
-
-**This is not a plug-and-play installer.** The Docker build **compiles llama.cpp for specific GPU architectures** (sm_89 + sm_120), and **all model configurations are tuned and tested for specific hardware** (RTX 4090 + RTX 5070 Ti). It can be adapted to other setups, but GPU layers and build flags will need adjusting. The detailed docs are there to help with that.
+Local LLM serving made manageable. A Docker wrapper around llama.cpp with model profiles, multi-GPU optimization, interactive monitoring dashboard, benchmarking pipeline, and Claude Code local integration — built for a dual-GPU desktop (RTX 4090 + RTX 5070 Ti) but adaptable to other setups.
 
 ## Table of Contents
 
+- [What Does This Wrapper Add?](#what-does-this-wrapper-add)
+- [Use Cases](#use-cases)
 - [Hardware](#hardware)
 - [Quick Start](#quick-start)
+- [Claude Code Local Integration](#claude-code-local-integration)
 - [Models](#models)
 - [Benchmarks (EvalPlus HumanEval+)](#benchmarks-evalplus-humaneval)
 - [Adding New Models](#adding-new-models)
 - [Configuration](#configuration)
+- [Architecture & Documentation](#architecture--documentation)
 - [AI-Assisted Development](#ai-assisted-development)
-- [Roadmap & Research](#roadmap--research)
-- [Documentation](#documentation)
 - [Repository Structure](#repository-structure)
 - [Updating llama.cpp](#updating-llamacpp)
 
 ---
+
+## What Does This Wrapper Add?
+
+[llama.cpp](https://github.com/ggml-org/llama.cpp) is a high-performance C/C++ inference engine for running LLMs locally using quantized GGUF models. It supports CPU and GPU inference (CUDA, Metal, Vulkan), can split model layers across multiple GPUs and CPU RAM, and is the engine that [Ollama](https://ollama.com/) is built on. It includes a web UI, an OpenAI-compatible API, and automatic multi-GPU placement via `--fit`.
+
+What it does not have is a convenient way to manage multiple model configurations, switch between them, monitor hardware usage, or integrate with development tools like Claude Code. That is what this wrapper adds:
+
+- **Dockerized build** — compiles llama.cpp from source with hardware-specific CUDA flags, making the setup reproducible and isolated
+- **Model selector** (`start.sh`) — interactive menu to pick a model, each with its own optimized GPU layer split, sampler defaults, and context size stored in `models.conf`
+- **Monitoring dashboard** (`dashboard.py`) — curses TUI showing server logs, per-GPU VRAM/utilization/temperature, and system stats; includes an in-dashboard model picker (`m` key) and a management API on port 8081 for switching models programmatically
+- **Claude Code local integration** (`claude-local`) — run Claude Code against the local llama-server instead of the Anthropic cloud, with sandboxing and VS Code integration
+- **Benchmarking** — EvalPlus HumanEval+ runner to compare local models against each other and against proprietary references
+- **Model onboarding** — `/add-model` skill with agent-assisted workflow for evaluating, configuring, and benchmarking new models
+- **Documentation** — GPU placement strategies, sampler settings per model, architecture overview, lessons learned
+
+llama.cpp provides the inference engine, web UI, and API. Everything else listed above is part of this wrapper.
+
+## Use Cases
+
+| Use case | What this project offers |
+|----------|------------------------|
+| **Local LLM inference with multi-GPU** | Automatic tensor placement (`--fit`) across asymmetric GPUs, model profiles with per-model GPU/context/sampler tuning, monitoring dashboard |
+| **Running Claude Code with local models** | `claude-local` connects Claude Code to the local llama-server — chat, tool use, thinking, VS Code integration, bubblewrap sandboxing, mid-session model switching |
+| **Model benchmarking** | EvalPlus HumanEval+ pipeline for comparing local models against each other and proprietary references (Claude, GPT, etc.) |
+| **MoE model optimization** | Working reference for how MoE vs dense architectures behave with automatic GPU placement across GPUs with different VRAM sizes |
+| **Learning about Claude Code workflows** | The project itself is developed with Claude Code agents and skills — see [AI-Assisted Development](#ai-assisted-development) |
+
+For a guide on setting up Claude Code itself (agents, skills, project workflows), see the separate [Claude Code Setup](https://github.com/nerdpudding/claude_code_setup) repository.
+
+> **Note:** This is not a plug-and-play installer. The Docker build compiles llama.cpp for specific GPU architectures (sm_89 + sm_120), and all model configurations are tuned for specific hardware (RTX 4090 + RTX 5070 Ti). It can be adapted to other setups, but GPU layers and build flags will need adjusting. The detailed docs are there to help with that.
+
+## Background
+
+For local LLM inference I used Ollama for a long time and it does a great job: easy model management, clean API, simple GPU offloading via GGUF. But as my projects moved toward larger models, agentic flows, and tighter hardware optimization, I kept running into limits. I wanted precise per-layer GPU/CPU placement across two GPUs with different VRAM sizes, access to the latest llama.cpp features as soon as they land, and control over build flags targeting my specific GPU architectures. Ollama's goal is simplicity — which it does well — but that means it doesn't expose these lower-level controls and sometimes lags behind on newer llama.cpp features.
+
+So I went back to llama.cpp directly. It has come a long way: web UI, OpenAI-compatible API, automatic multi-GPU placement via `--fit` (including MoE expert offloading). The goal of this wrapper is simple: get the most out of my hardware in terms of model quality, speed, and context length — and more recently, to use these local models as a backend for Claude Code. More on that in the [DGX Spark comparison article](docs/dgx-spark-comparison.md).
 
 ## Hardware
 
@@ -120,6 +131,26 @@ curl http://localhost:8080/v1/chat/completions \
   -H "Content-Type: application/json" \
   -d '{"messages": [{"role": "user", "content": "Hello!"}], "max_tokens": 100}'
 ```
+
+## Claude Code Local Integration
+
+Since llama.cpp supports the [Anthropic Messages API](https://huggingface.co/blog/ggml-org/anthropic-messages-api-in-llamacpp) natively, this setup works as a local backend for [Claude Code](https://claude.com/claude-code). The `claude-local` command starts a separate Claude Code instance that connects to the local llama-server instead of the Anthropic cloud.
+
+**What works:**
+- Chat, tool use (Glob, Read, Write, Edit), thinking blocks
+- VS Code IDE integration (diffs in editor)
+- Bubblewrap sandboxing (bash commands restricted)
+- Mid-session model switching via management API (conversation context preserved)
+- Skills and agents (with local model capability limitations)
+
+**What to be aware of:**
+- Local models are less capable than Opus — review actions before approving
+- The sandbox only covers bash commands, not Write/Edit tools
+- Some Claude Code features (prompt caching, adaptive reasoning) do not work locally
+
+**Setup:** See [`claude-local/README.md`](claude-local/README.md) for installation, configuration, usage, and safety guide.
+
+**What's next:** Automatic model switching within claude-local (agent decides which local model fits the task) is a future goal. Integration with other tools (Continue.dev, aider, [OpenClaw](https://github.com/openclaw/openclaw)) is on the [Roadmap](ROADMAP.md) but not planned for the short term.
 
 ## Models
 
@@ -223,6 +254,26 @@ Models being evaluated for potential addition. Model cards are in `models/docume
 
 Annotated template with full variable reference: [docker-compose.example.yml](docker-compose.example.yml)
 
+## Architecture & Documentation
+
+For a high-level overview of how all components connect (llama-server, dashboard, management API, Claude Code normal vs local, sandboxing), see **[docs/architecture.md](docs/architecture.md)**.
+
+### Documentation index
+
+| Document | Description |
+|----------|-------------|
+| [GPU Strategy Guide](docs/gpu-strategy-guide.md) | GPU placement decision tree, strategies A-D, graph splits, tuning guidance |
+| [Client Settings](docs/client-settings.md) | Recommended temperature, top_p, top_k, min_p, and system prompt settings per model |
+| [Bench Profile Test Results](docs/bench-test-results.md) | GPU optimization data: VRAM usage, speeds, OOM failures, layer split decisions |
+| [EvalPlus Benchmark Results](benchmarks/evalplus/results/REPORT.md) | Latest HumanEval+ scores for all models vs proprietary references |
+| [EvalPlus Benchmark Runner](benchmarks/evalplus/README.md) | HumanEval+ coding benchmark setup, usage, and comparison with proprietary models |
+| [Claude Code Local Setup](claude-local/README.md) | Installation, usage, and safety guide for running Claude Code with a local backend |
+| [Architecture Overview](docs/architecture.md) | C4-style overview of all components and design decisions |
+| [DGX Spark Comparison](docs/dgx-spark-comparison.md) | DGX Spark vs desktop analysis for local LLM inference |
+| [Lessons Learned](docs/lessons_learned.md) | Common mistakes and prevention rules |
+| [Local Setup Decision](docs/decisions/2026-02-24_claude-code-local-setup.md) | Analysis of isolation options and rationale for the chosen approach |
+| [docker-compose.example.yml](docker-compose.example.yml) | Annotated compose template with full variable reference |
+
 ## AI-Assisted Development
 
 This project is developed with [Claude Code](https://claude.com/claude-code) using specialized agents and workflows.
@@ -236,25 +287,9 @@ This project is developed with [Claude Code](https://claude.com/claude-code) usi
 
 **Workflow:** plan → approve → implement → test → document → commit. Non-trivial changes start as a plan file, get user approval, then are implemented with the appropriate agents.
 
-## Roadmap & Research
-
 See [ROADMAP.md](ROADMAP.md) for current status, completed milestones, and future plans.
 
 **Research:** [DGX Spark vs Desktop Comparison](docs/dgx-spark-comparison.md) — analysis of when NVIDIA's DGX Spark (128 GB unified memory, Grace Blackwell) is worth it compared to a dual-GPU desktop for local inference. Key finding: Spark is 2.7x faster for GPT-OSS 120B (52.8 vs 19.7 t/s) but the desktop wins for models that fit on a single GPU.
-
-## Documentation
-
-- **[GPU Strategy Guide](docs/gpu-strategy-guide.md)** — GPU placement decision tree, strategies A-D, graph splits, and tuning guidance
-- **[Client Settings](docs/client-settings.md)** — Recommended temperature, top_p, top_k, min_p, and system prompt settings per model
-- **[Bench Profile Test Results](docs/bench-test-results.md)** — GPU optimization data: VRAM usage, speeds, OOM failures, and layer split decisions
-- **[EvalPlus Benchmark Results](benchmarks/evalplus/results/REPORT.md)** — Latest HumanEval+ scores for all models vs proprietary references
-- **[EvalPlus Benchmark Runner](benchmarks/evalplus/README.md)** — HumanEval+ coding benchmark setup, usage, and comparison with proprietary models
-- **[DGX Spark Comparison](docs/dgx-spark-comparison.md)** — DGX Spark vs desktop analysis for local LLM inference
-- **[Lessons Learned](docs/lessons_learned.md)** — Common mistakes and prevention rules
-- **[docker-compose.example.yml](docker-compose.example.yml)** — Annotated compose template with full variable reference
-- **[Architecture Overview](docs/architecture.md)** — C4-style overview of how all components connect (llama-server, dashboard, Claude Code normal vs local, sandboxing, management API)
-- **[Claude Code Local Setup](claude-local/README.md)** — Installation, usage, and safety guide for running Claude Code with a local llama-server backend
-- **[Claude Code Local Setup Decision](docs/decisions/2026-02-24_claude-code-local-setup.md)** — Analysis of isolation options (alias, bubblewrap, Docker) and rationale for the chosen approach
 
 ## Repository Structure
 
