@@ -110,6 +110,14 @@ GPU placement uses `--fit` with `--n-gpu-layers auto` — FIT automatically dist
 - Requires deeper understanding of how Claude Code handles model routing internally, and how to gracefully handle the ~15-30s server downtime during a model switch.
 - Foundation already proven: management API works from within claude-local, session survives the switch, conversation context is preserved for the new model.
 
+### Revisit `-ts` (tensor split) for asymmetric GPU placement
+- FIT auto distributes based on available VRAM per device but doesn't account for GPU speed differences. On asymmetric setups (RTX 4090 + RTX 5070 Ti), this leads to suboptimal placement — e.g., the 27B dense bench profile at 10K context splits ~13 GB / 8 GB across CUDA0/CUDA1 instead of maximizing the faster 4090.
+- ggerganov recommended `-ts` (tensor split) in issue #19816 as the official way to control GPU distribution ratios. Previous testing of `-ts` showed poor results, but that test was done with the `N_GPU_LAYERS=99` hardcoded config error still active — so `-ts` never got a fair test.
+- Worth re-testing now that the config is fixed (`N_GPU_LAYERS=auto`), specifically for:
+  - Dense model bench profiles where Strategy A (single GPU) is borderline
+  - Production profiles where FIT's automatic split is suboptimal for the faster GPU
+  - Comparison: FIT auto vs `-ts 3,1` (75/25 split matching VRAM ratio) vs Strategy A
+
 ### Extended benchmarks
 - Add benchmarks for tasks beyond coding (reasoning, instruction following, tool calling)
 - Regression testing when updating llama.cpp
