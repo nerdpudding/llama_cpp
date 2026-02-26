@@ -1,6 +1,6 @@
 # EvalPlus HumanEval+ Benchmark Results
 
-*Generated: 2026-02-26 14:56*
+*Generated: 2026-02-27 00:27*
 
 ## Local Results (pass@1, greedy decoding, temperature=0)
 
@@ -8,14 +8,15 @@
 |---|-------|-----------|------------|-------------|
 | 1 | Claude Opus 4.6 | 98.2% | 95.1% | +4.0pp |
 | 2 | Qwen3.5-122B-A10B UD-Q4_K_XL | 97.6% | 94.5% | — |
-| 3 | Claude Opus 4.6 (thinking) | 99.4% | 93.9% | +5.2pp |
-| 4 | Qwen3-Next-80B-A3B UD-Q5_K_XL | 98.2% | 93.9% | — |
-| 5 | Qwen3-Coder-Next UD-Q5_K_XL | 93.9% | 90.9% | -0.2pp |
-| 6 | Qwen3.5-35B-A3B UD-Q6_K_XL | 95.1% | 90.9% | — |
-| 7 | bench-qwen3-coder-ud-q6 | 92.1% | 89.0% | — |
-| 8 | GLM-4.7 Flash Q8_0 * | 89.0% | 87.2% | +2.0pp |
-| 9 | GPT-OSS 120B F16 | 93.3% | 87.2% | +5.0pp |
-| 10 | GLM-4.7 Flash Q4_K_M * | 87.8% | 83.5% | +0.8pp |
+| 3 | Qwen3.5-27B UD-Q6_K_XL (dense) | 98.2% | 94.5% | — |
+| 4 | Claude Opus 4.6 (thinking) | 99.4% | 93.9% | +5.2pp |
+| 5 | Qwen3-Next-80B-A3B UD-Q5_K_XL | 98.2% | 93.9% | — |
+| 6 | Qwen3-Coder-Next UD-Q5_K_XL | 93.9% | 90.9% | -0.2pp |
+| 7 | Qwen3.5-35B-A3B UD-Q6_K_XL | 95.1% | 90.9% | — |
+| 8 | bench-qwen3-coder-ud-q6 | 92.1% | 89.0% | — |
+| 9 | GLM-4.7 Flash Q8_0 * | 89.0% | 87.2% | +2.0pp |
+| 10 | GPT-OSS 120B F16 | 93.3% | 87.2% | +5.0pp |
+| 11 | GLM-4.7 Flash Q4_K_M * | 87.8% | 83.5% | +0.8pp |
 
 ## HumanEval Ranking (pass@1)
 
@@ -24,24 +25,25 @@
 | 1 | **Claude Opus 4.6 (thinking)** | **99.4%** | **Local benchmark** |
 | 2 | **Claude Opus 4.6** | **98.2%** | **Local benchmark** |
 | 3 | **Qwen3-Next-80B-A3B UD-Q5_K_XL** | **98.2%** | **Local benchmark** |
-| 4 | **Qwen3.5-122B-A10B UD-Q4_K_XL** | **97.6%** | **Local benchmark** |
-| 5 | OpenAI O1 Preview | 96.3% | EvalPlus leaderboard |
-| 6 | **Qwen3.5-35B-A3B UD-Q6_K_XL** | **95.1%** | **Local benchmark** |
-| 7 | Claude Opus 4.5 | 94.2% | zoer.ai Jan 2026 benchmark |
-| 8 | Qwen3-Coder-Next (FP16, official) | 94.1% | Model card |
-| 9 | **Qwen3-Coder-Next UD-Q5_K_XL** | **93.9%** | **Local benchmark** |
-| 10 | **GPT-OSS 120B F16** | **93.3%** | **Local benchmark** |
-| 11 | **bench-qwen3-coder-ud-q6** | **92.1%** | **Local benchmark** |
-| 12 | Claude 3.5 Sonnet | 92.0% | EvalPlus leaderboard |
-| 13 | GPT-5.2 Codex | 91.7% | zoer.ai Jan 2026 benchmark |
-| 14 | GPT-4o | 90.2% | EvalPlus leaderboard |
-| 15 | Llama 3.1 405B | 89.0% | Meta official eval (0-shot, pass@1) |
-| 16 | **GLM-4.7 Flash Q8_0** | **89.0%** | **Local benchmark** |
-| 17 | GPT-OSS 120B (official) | 88.3% | Model card |
-| 18 | **GLM-4.7 Flash Q4_K_M** | **87.8%** | **Local benchmark** |
-| 19 | GLM-4.7 (full, not Flash) | 87.0% | zoer.ai |
-| 20 | Codestral 25.01 | 86.6% | Mistral AI |
-| 21 | Gemini 1.5 Pro | 84.1% | Gemini 1.5 technical report (arxiv:2403.05530) |
+| 4 | **Qwen3.5-27B UD-Q6_K_XL (dense)** | **98.2%** | **Local benchmark** |
+| 5 | **Qwen3.5-122B-A10B UD-Q4_K_XL** | **97.6%** | **Local benchmark** |
+| 6 | OpenAI O1 Preview | 96.3% | EvalPlus leaderboard |
+| 7 | **Qwen3.5-35B-A3B UD-Q6_K_XL** | **95.1%** | **Local benchmark** |
+| 8 | Claude Opus 4.5 | 94.2% | zoer.ai Jan 2026 benchmark |
+| 9 | Qwen3-Coder-Next (FP16, official) | 94.1% | Model card |
+| 10 | **Qwen3-Coder-Next UD-Q5_K_XL** | **93.9%** | **Local benchmark** |
+| 11 | **GPT-OSS 120B F16** | **93.3%** | **Local benchmark** |
+| 12 | **bench-qwen3-coder-ud-q6** | **92.1%** | **Local benchmark** |
+| 13 | Claude 3.5 Sonnet | 92.0% | EvalPlus leaderboard |
+| 14 | GPT-5.2 Codex | 91.7% | zoer.ai Jan 2026 benchmark |
+| 15 | GPT-4o | 90.2% | EvalPlus leaderboard |
+| 16 | Llama 3.1 405B | 89.0% | Meta official eval (0-shot, pass@1) |
+| 17 | **GLM-4.7 Flash Q8_0** | **89.0%** | **Local benchmark** |
+| 18 | GPT-OSS 120B (official) | 88.3% | Model card |
+| 19 | **GLM-4.7 Flash Q4_K_M** | **87.8%** | **Local benchmark** |
+| 20 | GLM-4.7 (full, not Flash) | 87.0% | zoer.ai |
+| 21 | Codestral 25.01 | 86.6% | Mistral AI |
+| 22 | Gemini 1.5 Pro | 84.1% | Gemini 1.5 technical report (arxiv:2403.05530) |
 
 ## HumanEval+ Ranking (pass@1, stricter)
 
@@ -49,19 +51,20 @@
 |---|-------|------------|--------|
 | 1 | **Claude Opus 4.6** | **95.1%** | **Local benchmark** |
 | 2 | **Qwen3.5-122B-A10B UD-Q4_K_XL** | **94.5%** | **Local benchmark** |
-| 3 | **Claude Opus 4.6 (thinking)** | **93.9%** | **Local benchmark** |
-| 4 | **Qwen3-Next-80B-A3B UD-Q5_K_XL** | **93.9%** | **Local benchmark** |
-| 5 | **Qwen3-Coder-Next UD-Q5_K_XL** | **90.9%** | **Local benchmark** |
-| 6 | **Qwen3.5-35B-A3B UD-Q6_K_XL** | **90.9%** | **Local benchmark** |
-| 7 | OpenAI O1 Preview | 89.0% | EvalPlus leaderboard |
-| 8 | **bench-qwen3-coder-ud-q6** | **89.0%** | **Local benchmark** |
-| 9 | GPT-4o | 87.2% | EvalPlus leaderboard |
-| 10 | Qwen2.5-Coder-32B-Instruct | 87.2% | EvalPlus leaderboard |
-| 11 | **GLM-4.7 Flash Q8_0** | **87.2%** | **Local benchmark** |
-| 12 | **GPT-OSS 120B F16** | **87.2%** | **Local benchmark** |
-| 13 | DeepSeek-V3 / GPT-4-Turbo | 86.6% | EvalPlus leaderboard |
-| 14 | **GLM-4.7 Flash Q4_K_M** | **83.5%** | **Local benchmark** |
-| 15 | Claude 3.5 Sonnet | 81.7% | EvalPlus leaderboard |
+| 3 | **Qwen3.5-27B UD-Q6_K_XL (dense)** | **94.5%** | **Local benchmark** |
+| 4 | **Claude Opus 4.6 (thinking)** | **93.9%** | **Local benchmark** |
+| 5 | **Qwen3-Next-80B-A3B UD-Q5_K_XL** | **93.9%** | **Local benchmark** |
+| 6 | **Qwen3-Coder-Next UD-Q5_K_XL** | **90.9%** | **Local benchmark** |
+| 7 | **Qwen3.5-35B-A3B UD-Q6_K_XL** | **90.9%** | **Local benchmark** |
+| 8 | OpenAI O1 Preview | 89.0% | EvalPlus leaderboard |
+| 9 | **bench-qwen3-coder-ud-q6** | **89.0%** | **Local benchmark** |
+| 10 | GPT-4o | 87.2% | EvalPlus leaderboard |
+| 11 | Qwen2.5-Coder-32B-Instruct | 87.2% | EvalPlus leaderboard |
+| 12 | **GLM-4.7 Flash Q8_0** | **87.2%** | **Local benchmark** |
+| 13 | **GPT-OSS 120B F16** | **87.2%** | **Local benchmark** |
+| 14 | DeepSeek-V3 / GPT-4-Turbo | 86.6% | EvalPlus leaderboard |
+| 15 | **GLM-4.7 Flash Q4_K_M** | **83.5%** | **Local benchmark** |
+| 16 | Claude 3.5 Sonnet | 81.7% | EvalPlus leaderboard |
 
 ## Notes
 
