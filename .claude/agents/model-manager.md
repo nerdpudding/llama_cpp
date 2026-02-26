@@ -22,20 +22,29 @@ Models live in `models/` with each model in its own subdirectory:
 ```
 models/
 ├── documentation/                # Model cards — ALWAYS check these
-│   ├── CANDIDATES/               # Model cards for potential future models
+│   ├── CANDIDATES/               # Model cards for candidate models (not yet adopted)
+│   │   └── README_Qwen3.5-27B-GGUF.md  # pending — CUDA crash under investigation
 │   ├── README_modelcard_GLM-4.7-Flash.md
-│   ├── README_modelcard_gpt-oss-120b-GGUF.md
-│   ├── README_modelcard_qwen3_coder_next.md
-│   └── README_Qwen3-Next-80B-A3B-Instruct-GGUF.md
+│   ├── README_Qwen3.5-35B-A3B-GGUF.md
+│   ├── README_Qwen3.5-122B-A10B-GGUF.md
+│   ├── README_modelcard_gpt-oss-120b-GGUF.md    # retired model
+│   ├── README_modelcard_qwen3_coder_next.md     # retired model
+│   └── README_Qwen3-Next-80B-A3B-Instruct-GGUF.md  # retired model
 ├── GLM-4.7-Flash/
 │   ├── GLM-4.7-Flash-Q4_K_M.gguf    (18 GB, MoE 30B-A3B)
 │   ├── GLM-4.7-Flash-Q8_0.gguf      (30 GB, MoE 30B-A3B)
 │   └── other/
-├── GPT-OSS-120b/
+├── Qwen3.5/
+│   ├── MoE/
+│   │   ├── 35B/                  (~29 GiB, MoE 35B-A3B, UD-Q6_K_XL)
+│   │   └── 122B/                 (~65 GiB, MoE 122B-A10B, UD-Q4_K_XL, 3 parts)
+│   └── Dense/
+│       └── 27B-UD-Q8_K_XL/      (~31 GiB, dense 27B, pending — CUDA crash)
+├── GPT-OSS-120b/                 # retired 2026-02-26 (files may remain on disk)
 │   └── gpt-oss-120b-F16.gguf        (61 GB, MoE 116.8B)
-├── Qwen3-Coder-Next/
+├── Qwen3-Coder-Next/             # retired 2026-02-26 (files may remain on disk)
 │   └── UD-Q5_K_XL/                  (~57 GB, MoE 80B)
-└── Qwen3-Next/
+└── Qwen3-Next/                   # retired 2026-02-26 (files may remain on disk)
     └── UD-Q5_K_XL/                  (~53 GB, MoE 80B)
 ```
 
@@ -96,7 +105,7 @@ find models/ -name "*.gguf" -exec ls -lh {} \;
 
 For this hardware (24 GB + 12.5 GB usable GPU VRAM, 64 GB RAM):
 
-- **All current models are MoE** — file size alone doesn't tell you if it fits
+- **Most current models are MoE, but Qwen3.5-27B is dense** — file size alone doesn't tell you if it fits
 - Check model card for architecture (dense vs MoE, expert count, active params)
 - UD (Unsloth Dynamic) quants are preferred over standard for MoE models — better router precision
 - Q4 and below: generally unusable for agentic coding (causes self-correction loops)

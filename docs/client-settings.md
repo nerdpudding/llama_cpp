@@ -6,28 +6,47 @@ Quick reference for recommended client-side settings per model. Use these when c
 
 ## Model capabilities
 
+Active models:
+
 | Model | Best for | Thinking | Tool calling | Speed |
 |-------|----------|----------|-------------|-------|
 | GLM-4.7 Flash | General tasks, reasoning, tool calling | Yes (`<think>` blocks) | Yes (native) | 112-147 t/s |
+| Qwen3.5-35B-A3B | Reasoning, coding, multilingual, agentic | Yes (`<think>` blocks, default) | Yes (native) | ~120 t/s |
+| Qwen3.5-122B-A10B | Deep reasoning, agentic, terminal/tool use | Yes (`<think>` blocks, default) | Yes (native) | ~18 t/s |
+| Qwen3.5-27B | Quality coding, reasoning (dense, all 27B active) | Yes (`<think>` blocks, default) | Yes (native) | pending (CUDA crash) |
+
+Retired models (2026-02-26) — settings preserved below for reference:
+
+| Model | Best for | Thinking | Tool calling | Speed |
+|-------|----------|----------|-------------|-------|
 | GPT-OSS 120B | Deep reasoning, knowledge, structured output | Yes (configurable low/med/high) | Yes (native) | ~22 t/s |
 | Qwen3-Coder-Next | Coding agents, agentic tasks | No | Yes (native) | ~33 t/s |
 | Qwen3-Next-80B-A3B | General reasoning, knowledge, agentic, ultra-long context | No | Yes (native) | ~33 t/s |
-| Qwen3.5-35B-A3B | Reasoning, coding, multilingual, agentic | Yes (`<think>` blocks, default) | Yes (native) | ~estimated |
-| Qwen3.5-27B | Quality coding, reasoning (dense, all 27B active) | Yes (`<think>` blocks, default) | Yes (native) | ~estimated |
-| Qwen3.5-122B-A10B | Deep reasoning, agentic, terminal/tool use | Yes (`<think>` blocks, default) | Yes (native) | ~estimated |
 
 ## Sampler settings at a glance
 
 Qwen3.5 settings apply to **all three models** (35B-A3B, 27B, 122B-A10B) — same family, same recommendations.
 
-| Setting | GLM (general) | GLM (coding) | GPT-OSS | Qwen3-Coder | Qwen3-Next | Qwen3.5 all (thinking) | Qwen3.5 all (coding) |
-|---------|--------------|-------------|---------|-------------|------------|------------------------|----------------------|
-| temperature | 1.0 | 0.7 | 1.0 | 1.0 | 0.7 | 1.0 | 0.6 |
-| top_p | 0.95 | 1.0 | 1.0 | 0.95 | 0.8 | 0.95 | 0.95 |
-| top_k | — | — | 0 (disabled) | 40 | 20 | 20 | 20 |
-| min_p | 0.01 | 0.01 | — | 0.01 | — | 0.0 | 0.0 |
-| presence_penalty | — | — | — | — | — | 1.5 (client-side) | 0.0 |
-| system prompt | — | — | "Reasoning: low/med/high" | — | — | — | — |
+Active models:
+
+| Setting | GLM (general) | GLM (coding) | Qwen3.5 all (thinking) | Qwen3.5 all (coding) |
+|---------|--------------|-------------|------------------------|----------------------|
+| temperature | 1.0 | 0.7 | 1.0 | 0.6 |
+| top_p | 0.95 | 1.0 | 0.95 | 0.95 |
+| top_k | — | — | 20 | 20 |
+| min_p | 0.01 | 0.01 | 0.0 | 0.0 |
+| presence_penalty | — | — | 1.5 (client-side) | 0.0 |
+| system prompt | — | — | — | — |
+
+Retired models (2026-02-26) — preserved for reference:
+
+| Setting | GPT-OSS | Qwen3-Coder | Qwen3-Next |
+|---------|---------|-------------|------------|
+| temperature | 1.0 | 1.0 | 0.7 |
+| top_p | 1.0 | 0.95 | 0.8 |
+| top_k | 0 (disabled) | 40 | 20 |
+| min_p | — | 0.01 | — |
+| system prompt | "Reasoning: low/med/high" | — | — |
 
 ---
 

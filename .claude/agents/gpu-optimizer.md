@@ -140,12 +140,15 @@ Result on Qwen3-Next (53 GB) at 262K context (with FIT_TARGET=128,1024):
 
 ## Model reference
 
-| Model | Type | Params | Active | Experts | Layers | Files |
-|-------|------|--------|--------|---------|--------|-------|
-| GLM-4.7-Flash | MoE | 30B | 3B | 64/layer, 4+1 shared | 47 (1 dense + 46 MoE) | Q4: 18 GB, Q8: 30 GB |
-| GPT-OSS 120B | MoE | 116.8B | 5.1B | 128/layer, 4 active | 36 (18 SWA) | F16: 61 GB |
-| Qwen3-Coder-Next | MoE | 80B | 3B | 512/layer, 10 active + 1 shared | 48 (75% DeltaNet) | Q5: 57 GB, Q6: 64 GB |
-| Qwen3-Next-80B-A3B | MoE | 80B | 3B | 512/layer, 10 active + 1 shared | 48 (75% DeltaNet) | Q5: 53 GB |
+| Model | Type | Params | Active | Experts | Layers | Files | Status |
+|-------|------|--------|--------|---------|--------|-------|--------|
+| GLM-4.7-Flash | MoE | 30B | 3B | 64/layer, 4+1 shared | 47 (1 dense + 46 MoE) | Q4: 18 GB, Q8: 30 GB | active |
+| Qwen3.5-35B-A3B | MoE | 35B | 3B | 256/layer, 8 routed + 1 shared | 40 (75% DeltaNet) | Q6: 29 GiB | active |
+| Qwen3.5-122B-A10B | MoE | 122B | 10B | 256/layer, 8 routed + 1 shared | 48 (75% DeltaNet) | Q4: 65 GiB | active |
+| Qwen3.5-27B | **Dense** | 27B | **27B** | none (FFN, not MoE) | 64 (75% DeltaNet) | Q8: 31 GiB | pending (CUDA crash) |
+| GPT-OSS 120B | MoE | 116.8B | 5.1B | 128/layer, 4 active | 36 (18 SWA) | F16: 61 GB | **retired 2026-02-26** |
+| Qwen3-Coder-Next | MoE | 80B | 3B | 512/layer, 10 active + 1 shared | 48 (75% DeltaNet) | Q5: 57 GB, Q6: 64 GB | **retired 2026-02-26** |
+| Qwen3-Next-80B-A3B | MoE | 80B | 3B | 512/layer, 10 active + 1 shared | 48 (75% DeltaNet) | Q5: 53 GB | **retired 2026-02-26** |
 
 ## Files you own
 

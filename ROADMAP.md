@@ -2,16 +2,18 @@
 
 ## Current Status
 
-Six models are configured in `models.conf` and selectable via `./start.sh` on a dual-GPU desktop (RTX 4090 + RTX 5070 Ti):
+Five models are active in `models.conf` and selectable via `./start.sh` on a dual-GPU desktop (RTX 4090 + RTX 5070 Ti), plus one pending:
 
-- **GLM-4.7 Flash Q4_K_M** — ~147 t/s, 128K context, fast general tasks, reasoning, tool calling
-- **GLM-4.7 Flash Q8_0** — ~112 t/s, 128K context, higher quality reasoning and tool calling
-- **GLM-4.7 Flash Q8_0 (experimental)** — ~112 t/s, 128K context, experimental config
-- **GPT-OSS 120B F16** — ~22 t/s, 128K context, deep reasoning, knowledge, structured output
-- **Qwen3-Coder-Next UD-Q5_K_XL** — ~33 t/s, 256K context, coding agents, agentic tasks
-- **Qwen3-Next-80B-A3B UD-Q5_K_XL** — ~33 t/s, 256K context, general-purpose reasoning, knowledge, agentic tasks, ultra-long context
+- **GLM-4.7 Flash Q4_K_M** — ~147 t/s, 128K context, fast general tasks, reasoning, tool calling (MoE)
+- **GLM-4.7 Flash Q8_0** — ~112 t/s, 128K context, higher quality reasoning and tool calling (MoE)
+- **GLM-4.7 Flash Q8_0 (experimental)** — ~112 t/s, 128K context, experimental config (MoE)
+- **Qwen3.5-35B-A3B UD-Q6_K_XL** — ~120 t/s, 262K context, thinking model, coding, agentic tasks (MoE, DeltaNet)
+- **Qwen3.5-122B-A10B UD-Q4_K_XL** — ~18 t/s, 262K context, quality king, deep reasoning, coding (MoE, DeltaNet, 10B active)
+- **Qwen3.5-27B UD-Q8_K_XL** — pending (CUDA crash on first inference — illegal memory access on device 0, needs investigation)
 
-All models are MoE. GPU placement uses `--fit` with `--n-gpu-layers auto` — FIT automatically distributes layers and expert tensors across CUDA0, CUDA1, and CPU RAM. See `docs/gpu-strategy-guide.md` for details and `docs/bench-test-results.md` for historical performance data. Latest EvalPlus HumanEval+ scores are in `benchmarks/evalplus/results/REPORT.md`.
+Three models retired 2026-02-26: GPT-OSS 120B, Qwen3-Coder-Next, Qwen3-Next-80B-A3B — replaced by the Qwen3.5 family after benchmark comparison. See the Done section below and `models.conf` for details.
+
+GPU placement uses `--fit` with `--n-gpu-layers auto` — FIT automatically distributes layers and expert tensors across CUDA0, CUDA1, and CPU RAM. See `docs/gpu-strategy-guide.md` for details and `docs/bench-test-results.md` for historical performance data. Latest EvalPlus HumanEval+ scores are in `benchmarks/evalplus/results/REPORT.md`.
 
 **Monitoring dashboard:** `start.sh` launches the container in the background, waits for server health, and opens a Python curses TUI (`dashboard.py`) with four panels: server logs (scrollable), per-GPU VRAM/utilization/power/temp monitoring, system stats (CPU/RAM/swap/container), and keyboard controls (`q` stop & exit, `r` stop & return to menu, `m` open model picker). The dashboard survives container restarts — model switching happens inside the TUI without returning to the shell. A management API runs on port 8081 (`GET /models`, `GET /status`, `POST /switch`) for programmatic model switching by agents and external tools. Use `--no-dashboard` for raw log output.
 
@@ -32,12 +34,23 @@ All models are MoE. GPU placement uses `--fit` with `--n-gpu-layers auto` — FI
 
 ### Formal benchmarks (EvalPlus HumanEval+)
 - EvalPlus benchmark runner in `benchmarks/evalplus/` — runs HumanEval+ (164 Python problems) against all models via the llama.cpp OpenAI API
-- 5 local models + 2 Claude configurations benchmarked (2026-02-15)
+- Initial run: 5 local models + 2 Claude configurations benchmarked (2026-02-15)
+- Extended run with Qwen3.5 models (2026-02-26): added Qwen3.5-122B-A10B and Qwen3.5-35B-A3B
 - Optimized bench profiles in `models.conf` (bench-*) with 10K context and maximized GPU layers
-- Top local result: Qwen3-Coder-Next UD-Q5_K_XL at 93.9% HumanEval / 90.9% HumanEval+
+- Top local result: Qwen3.5-122B-A10B UD-Q4_K_XL at 97.6% HumanEval / 94.5% HumanEval+ (#2 behind Claude Opus 4.6)
+- Qwen3.5-35B-A3B: 95.1% / 90.9% — ties Qwen3-Coder-Next at 4x the speed
 - Claude Opus 4.6: 98.2% / 95.1% (non-thinking) and 99.4% / 93.9% (thinking)
 - Full results: `benchmarks/evalplus/results/REPORT.md`
 - See `benchmarks/evalplus/README.md` for setup and usage
+
+### Model lineup refresh (2026-02-26)
+- Added Qwen3.5-35B-A3B UD-Q6_K_XL (~120 t/s) and Qwen3.5-122B-A10B UD-Q4_K_XL (~18 t/s) after benchmark comparison
+- Added Qwen3.5-27B UD-Q8_K_XL (pending — CUDA crash on first inference, under investigation)
+- Retired GPT-OSS 120B: outclassed by Qwen3.5-122B (94.5% vs 87.2% HumanEval+) with similar speed
+- Retired Qwen3-Coder-Next: matched by Qwen3.5-35B (90.9% HumanEval+ each) at ~4x the speed (~120 vs ~33 t/s)
+- Retired Qwen3-Next-80B-A3B: superseded by Qwen3.5-122B (94.5% vs 93.9% HumanEval+) with better architecture
+- Retired model profiles commented out in `models.conf` (not deleted — reactivate if needed)
+- Benchmark data and REPORT.md scores preserved for retired models
 
 ### Bench profile GPU optimization
 - All bench profiles optimized: reduced context (16K→10K), smaller batch sizes (-b 512 -ub 512), more GPU layers

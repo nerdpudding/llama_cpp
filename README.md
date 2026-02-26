@@ -154,50 +154,58 @@ Since llama.cpp supports the [Anthropic Messages API](https://huggingface.co/blo
 
 ## Models
 
-All models are MoE (Mixture of Experts) and defined in `models.conf`. Use the section ID with `./start.sh` to launch.
+All active models are defined in `models.conf`. Use the section ID with `./start.sh` to launch.
 
-| Section ID | Model | Speed | Context | Best for |
-|------------|-------|-------|---------|----------|
-| `glm-flash-q4` | GLM-4.7 Flash Q4_K_M | ~147 t/s | 128K | Fast tasks, reasoning |
-| `glm-flash-q8` | GLM-4.7 Flash Q8_0 | ~112 t/s | 128K | Quality reasoning, tools |
-| `glm-flash-exp` | GLM-4.7 Flash Q8_0 (experimental) | ~112 t/s | 128K | Experimental |
-| `gpt-oss-120b` | GPT-OSS 120B F16 | ~22 t/s | 128K | Deep reasoning, knowledge |
-| `qwen3-coder-ud-q5` | Qwen3-Coder-Next UD-Q5_K_XL | ~33 t/s | 256K | Coding agents |
-| `qwen3-next-ud-q5` | Qwen3-Next-80B-A3B UD-Q5_K_XL | ~33 t/s | 256K | General reasoning, ultra-long context |
+| Section ID | Model | Type | Speed | Context | Best for |
+|------------|-------|------|-------|---------|----------|
+| `glm-flash-q4` | GLM-4.7 Flash Q4_K_M | MoE | ~147 t/s | 128K | Fast tasks, reasoning |
+| `glm-flash-q8` | GLM-4.7 Flash Q8_0 | MoE | ~112 t/s | 128K | Quality reasoning, tools |
+| `glm-flash-exp` | GLM-4.7 Flash Q8_0 (experimental) | MoE | ~112 t/s | 128K | Experimental |
+| `qwen35-35b-q6` | Qwen3.5-35B-A3B UD-Q6_K_XL | MoE | ~120 t/s | 262K | Thinking, reasoning, coding, agentic |
+| `qwen35-122b-q4` | Qwen3.5-122B-A10B UD-Q4_K_XL | MoE | ~18 t/s | 262K | Deep reasoning, quality, coding |
+| `qwen35-27b-q8` | Qwen3.5-27B UD-Q8_K_XL | Dense | ~20-30 t/s (est.) | 262K | Pending — CUDA crash under investigation |
+
+Three models were retired 2026-02-26 after benchmark comparison: GPT-OSS 120B (87.2% HumanEval+), Qwen3-Coder-Next (90.9%), and Qwen3-Next-80B-A3B (93.9%). Their profiles are commented out in `models.conf`.
 
 ### Sampler settings
 
 Recommended client-side settings per model. Most clients override server defaults, so set these explicitly.
 
-| Setting | GLM (general) | GLM (coding) | GPT-OSS | Qwen3-Coder | Qwen3-Next |
-|---------|--------------|-------------|---------|-------------|------------|
-| temperature | 1.0 | 0.7 | 1.0 | 1.0 | 0.7 |
-| top_p | 0.95 | 1.0 | 1.0 | 0.95 | 0.8 |
-| top_k | — | — | 0 (disabled) | 40 | 20 |
-| min_p | 0.01 | 0.01 | — | 0.01 | — |
+| Setting | GLM (general) | GLM (coding) | Qwen3.5 (thinking) | Qwen3.5 (coding) |
+|---------|--------------|-------------|---------------------|------------------|
+| temperature | 1.0 | 0.7 | 1.0 | 0.6 |
+| top_p | 0.95 | 1.0 | 0.95 | 0.95 |
+| top_k | — | — | 20 | 20 |
+| min_p | 0.01 | 0.01 | 0.0 | 0.0 |
+| presence_penalty | — | — | 1.5 (client-side) | 0.0 |
 
-Full details and rationale: [docs/client-settings.md](docs/client-settings.md)
+Qwen3.5 settings apply to all three Qwen3.5 models (35B-A3B, 27B, 122B-A10B). Full details and rationale: [docs/client-settings.md](docs/client-settings.md)
 
 ### Model-specific notes
 
-**GPT-OSS 120B reasoning levels:** GPT-OSS supports configurable reasoning effort via a system prompt trigger (`"Reasoning: low/medium/high"`). This cannot be set server-side — set it in the system prompt field of your client. `medium` is the default when no system prompt is set. See the [model card](models/documentation/README_modelcard_gpt-oss-120b-GGUF.md) for details.
+**Qwen3.5 thinking model:** All three Qwen3.5 models generate `<think>` blocks by default. Thinking cannot be disabled with `/nothink` (unlike Qwen3) — use the chat template parameter `enable_thinking=false` if your client supports it. `presence_penalty=1.5` is strongly recommended for general use and must be set client-side.
+
+**Retired model notes (for reference):** GPT-OSS 120B, Qwen3-Coder-Next, and Qwen3-Next-80B-A3B were retired 2026-02-26. Historical sampler settings and notes for these models are preserved in [docs/client-settings.md](docs/client-settings.md).
 
 ## Benchmarks (EvalPlus HumanEval+)
 
 Coding benchmark: 164 Python problems (HumanEval+), pass@1, greedy decoding. HumanEval+ uses 80x more tests than standard HumanEval.
 
-### Local results (2026-02-23)
+### Local results (2026-02-26)
 
 | # | Model | HumanEval | HumanEval+ | vs published |
 |---|-------|-----------|------------|--------------|
 | 1 | Claude Opus 4.6 | 98.2% | 95.1% | +4.0pp |
-| 2 | Claude Opus 4.6 (thinking) | 99.4% | 93.9% | +5.2pp |
-| 3 | Qwen3-Next UD-Q5_K_XL | 98.2% | 93.9% | — |
-| 4 | Qwen3-Coder-Next UD-Q5_K_XL | 93.9% | 90.9% | -0.2pp |
-| 5 | Qwen3-Coder-Next UD-Q6_K_XL | 92.1% | 89.0% | — |
-| 6 | GLM-4.7 Flash Q8_0 * | 89.0% | 87.2% | +2.0pp |
-| 7 | GPT-OSS 120B F16 | 93.3% | 87.2% | +5.0pp |
-| 8 | GLM-4.7 Flash Q4_K_M * | 87.8% | 83.5% | +0.8pp |
+| 2 | Qwen3.5-122B-A10B UD-Q4_K_XL | 97.6% | 94.5% | — |
+| 3 | Claude Opus 4.6 (thinking) | 99.4% | 93.9% | +5.2pp |
+| 4 | Qwen3-Next-80B-A3B UD-Q5_K_XL † | 98.2% | 93.9% | — |
+| 5 | Qwen3-Coder-Next UD-Q5_K_XL † | 93.9% | 90.9% | -0.2pp |
+| 6 | Qwen3.5-35B-A3B UD-Q6_K_XL | 95.1% | 90.9% | — |
+| 7 | GLM-4.7 Flash Q8_0 * | 89.0% | 87.2% | +2.0pp |
+| 8 | GPT-OSS 120B F16 † | 93.3% | 87.2% | +5.0pp |
+| 9 | GLM-4.7 Flash Q4_K_M * | 87.8% | 83.5% | +0.8pp |
+
+† Retired model (2026-02-26) — benchmark scores preserved for reference.
 
 **"vs published"** = difference in HumanEval score compared to the closest published reference score for that model (from model cards, [EvalPlus leaderboard](https://evalplus.github.io/leaderboard.html), or benchmark articles). Not always an exact apples-to-apples comparison — see [REPORT.md](benchmarks/evalplus/results/REPORT.md) for full details, reference sources, and caveats.
 
@@ -289,7 +297,7 @@ This project is developed with [Claude Code](https://claude.com/claude-code) usi
 
 See [ROADMAP.md](ROADMAP.md) for current status, completed milestones, and future plans.
 
-**Research:** [DGX Spark vs Desktop Comparison](docs/dgx-spark-comparison.md) — analysis of when NVIDIA's DGX Spark (128 GB unified memory, Grace Blackwell) is worth it compared to a dual-GPU desktop for local inference. Key finding: Spark is 2.7x faster for GPT-OSS 120B (52.8 vs 19.7 t/s) but the desktop wins for models that fit on a single GPU.
+**Research:** [DGX Spark vs Desktop Comparison](docs/dgx-spark-comparison.md) — analysis of when NVIDIA's DGX Spark (128 GB unified memory, Grace Blackwell) is worth it compared to a dual-GPU desktop for local inference. Key finding (based on GPT-OSS 120B, now retired): Spark was 2.7x faster for that model (52.8 vs 19.7 t/s), but the desktop wins for models that fit on a single GPU.
 
 ## Repository Structure
 
@@ -327,12 +335,21 @@ See [ROADMAP.md](ROADMAP.md) for current status, completed milestones, and futur
 ├── models/                        # GGUF files (gitignored)
 │   ├── .gitkeep
 │   ├── documentation/             # Model cards (README from HuggingFace)
-│   │   └── CANDIDATES/            # Model cards for potential future models
+│   │   ├── CANDIDATES/            # Model cards for candidate models (not yet adopted)
+│   │   ├── README_modelcard_GLM-4.7-Flash.md
+│   │   ├── README_Qwen3.5-35B-A3B-GGUF.md
+│   │   └── README_Qwen3.5-122B-A10B-GGUF.md
 │   ├── GLM-4.7-Flash/
-│   ├── GPT-OSS-120b/
-│   ├── Qwen3-Coder-Next/
+│   ├── Qwen3.5/
+│   │   ├── MoE/
+│   │   │   ├── 35B/               # Qwen3.5-35B-A3B UD-Q6_K_XL
+│   │   │   └── 122B/              # Qwen3.5-122B-A10B UD-Q4_K_XL
+│   │   └── Dense/
+│   │       └── 27B-UD-Q8_K_XL/   # Qwen3.5-27B (pending — CUDA crash)
+│   ├── GPT-OSS-120b/              # retired 2026-02-26
+│   ├── Qwen3-Coder-Next/          # retired 2026-02-26
 │   │   └── UD-Q5_K_XL/
-│   └── Qwen3-Next/
+│   └── Qwen3-Next/                # retired 2026-02-26
 │       └── UD-Q5_K_XL/
 ├── benchmarks/
 │   └── evalplus/                  # EvalPlus HumanEval+ coding benchmark runner

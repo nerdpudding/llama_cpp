@@ -57,20 +57,29 @@ For non-trivial changes, follow this order:
 │       └── 2026-02-24_claude-code-local-setup_NL.md  # Same document in Dutch
 ├── models/                           # GGUF model files (gitignored)
 │   ├── documentation/                # Model cards from HuggingFace
-│   │   ├── CANDIDATES/               # Model cards for potential future models
+│   │   ├── CANDIDATES/               # Model cards for candidate models (not yet adopted)
 │   │   │   ├── README_Nemotron-3-Nano-30B-A3B-GGUF.md
 │   │   │   ├── README_Devstral-Small-2-24B-Instruct-2512-GGUF.md
 │   │   │   ├── README_Ministral-3-14B-Instruct-2512-GGUF.md
-│   │   │   └── README_Ministral-3-14B-Reasoning-2512-GGUF.md
+│   │   │   ├── README_Ministral-3-14B-Reasoning-2512-GGUF.md
+│   │   │   └── README_Qwen3.5-27B-GGUF.md      # pending — CUDA crash under investigation
 │   │   ├── README_modelcard_GLM-4.7-Flash.md
-│   │   ├── README_modelcard_gpt-oss-120b-GGUF.md
-│   │   ├── README_modelcard_qwen3_coder_next.md
-│   │   └── README_Qwen3-Next-80B-A3B-Instruct-GGUF.md
+│   │   ├── README_modelcard_gpt-oss-120b-GGUF.md    # retired model
+│   │   ├── README_modelcard_qwen3_coder_next.md     # retired model
+│   │   ├── README_Qwen3-Next-80B-A3B-Instruct-GGUF.md  # retired model
+│   │   ├── README_Qwen3.5-35B-A3B-GGUF.md
+│   │   └── README_Qwen3.5-122B-A10B-GGUF.md
 │   ├── GLM-4.7-Flash/
-│   ├── GPT-OSS-120b/
-│   ├── Qwen3-Coder-Next/
+│   ├── Qwen3.5/
+│   │   ├── MoE/
+│   │   │   ├── 35B/                  # Qwen3.5-35B-A3B UD-Q6_K_XL
+│   │   │   └── 122B/                 # Qwen3.5-122B-A10B UD-Q4_K_XL
+│   │   └── Dense/
+│   │       └── 27B-UD-Q8_K_XL/      # Qwen3.5-27B (pending — CUDA crash)
+│   ├── GPT-OSS-120b/                 # retired 2026-02-26 (files may remain on disk)
+│   ├── Qwen3-Coder-Next/             # retired 2026-02-26 (files may remain on disk)
 │   │   └── UD-Q5_K_XL/
-│   └── Qwen3-Next/
+│   └── Qwen3-Next/                   # retired 2026-02-26 (files may remain on disk)
 │       └── UD-Q5_K_XL/
 ├── benchmarks/
 │   └── evalplus/                     # EvalPlus HumanEval+ benchmark pipeline

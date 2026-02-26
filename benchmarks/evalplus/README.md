@@ -140,8 +140,8 @@ When `bench-client.conf` specifies a `SYSTEM_PROMPT` for a model, `codegen-custo
 [defaults]
 MAX_TOKENS=4096
 
-[bench-gpt-oss-120b]
-SYSTEM_PROMPT=Reasoning: high
+[bench-qwen35-122b-q4]
+# No system prompt needed — thinking model handled via --reasoning-format none server-side
 ```
 
 ## Benchmark profiles
@@ -152,14 +152,14 @@ Profiles are defined in `models.conf` with a `bench-` prefix. They use the same 
 |---------|-------|-------|
 | `bench-glm-flash-q4` | GLM-4.7 Flash Q4_K_M | Smallest, fastest — good for smoke testing |
 | `bench-glm-flash-q8` | GLM-4.7 Flash Q8_0 | Higher quality quant |
-| `bench-gpt-oss-120b` | GPT-OSS 120B F16 | Large MoE, partial CPU offload |
-| `bench-qwen3-coder-ud-q5` | Qwen3-Coder-Next UD-Q5_K_XL | Coding model |
-| `bench-qwen3-next-ud-q5` | Qwen3-Next-80B-A3B UD-Q5_K_XL | General-purpose, non-thinking |
 | `bench-qwen35-35b-q6` | Qwen3.5-35B-A3B UD-Q6_K_XL | Thinking model, DeltaNet MoE |
 | `bench-qwen35-122b-q4` | Qwen3.5-122B-A10B UD-Q4_K_XL | Thinking model, DeltaNet MoE, CPU offload |
-| `bench-qwen35-27b-q8` | Qwen3.5-27B UD-Q8_K_XL | Thinking model, dense (all 27B active), DeltaNet |
+| `bench-qwen35-27b-q8` | Qwen3.5-27B UD-Q8_K_XL | Thinking model, dense (all 27B active), DeltaNet — pending CUDA crash investigation |
 | `bench-opus4.6-thinking` | Claude Opus 4.6 | Extended thinking (via Claude Code) |
 | `bench-opus4.6` | Claude Opus 4.6 | Without thinking (via Claude Code) |
+| ~~`bench-gpt-oss-120b`~~ | GPT-OSS 120B F16 | **Retired 2026-02-26** — profile commented out in models.conf; scores in REPORT.md |
+| ~~`bench-qwen3-coder-ud-q5`~~ | Qwen3-Coder-Next UD-Q5_K_XL | **Retired 2026-02-26** — profile commented out in models.conf; scores in REPORT.md |
+| ~~`bench-qwen3-next-ud-q5`~~ | Qwen3-Next-80B-A3B UD-Q5_K_XL | **Retired 2026-02-26** — profile commented out in models.conf; scores in REPORT.md |
 
 View profiles: `./benchmark.sh --list`
 
@@ -183,7 +183,7 @@ results/
 - **"Python venv not found"** — Run the one-time setup steps above.
 - **"Container llama-server is already running"** — Stop it first: `docker compose -f ../../docker-compose.yml down`
 - **Server fails to start** — Check that the model file exists. The script logs the last 30 lines from the container on failure.
-- **Timeout waiting for health** — Large models (GPT-OSS 120B) can take several minutes to load. The default timeout is 10 minutes. If that's not enough, increase `HEALTH_TIMEOUT` in `codegen.sh`.
+- **Timeout waiting for health** — Large models with heavy CPU expert offload (e.g., Qwen3.5-122B at 65 GiB) can take several minutes to load. The default timeout is 10 minutes. If that's not enough, increase `HEALTH_TIMEOUT` in `codegen.sh`.
 - **Evaluation produces unexpected results** — Check `evaluation.log` in the model's results directory.
 - **Interrupted mid-run** — Safe to restart. The script stops the container on each model transition. Completed results are preserved. When re-running, you'll be asked whether to overwrite or skip existing results.
 
