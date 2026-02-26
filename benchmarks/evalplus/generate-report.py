@@ -28,7 +28,7 @@ DISPLAY_NAMES = {
     "bench-opus4.6": "Claude Opus 4.6",
     "bench-qwen35-35b-q6": "Qwen3.5-35B-A3B UD-Q6_K_XL",
     "bench-qwen35-122b-q4": "Qwen3.5-122B-A10B UD-Q4_K_XL",
-    "bench-qwen35-27b-q8": "Qwen3.5-27B UD-Q8_K_XL (dense)",
+    "bench-qwen35-27b-q6": "Qwen3.5-27B UD-Q6_K_XL (dense)",
 }
 
 # Map section IDs to reference model keys for delta calculation
