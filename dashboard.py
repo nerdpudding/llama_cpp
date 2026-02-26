@@ -282,10 +282,12 @@ class Dashboard:
         self.load_avg = ""
         self.mem_total = 0
         self.mem_used = 0
+        self.mem_actual = 0       # MemTotal - MemFree (includes file cache)
         self.swap_total = 0
         self.swap_used = 0
         self.container_cpu = ""
-        self.container_mem = ""
+        self.container_mem_bytes = 0  # Container memory in MiB
+        self.container_mem_limit = 0  # Container memory limit in MiB
 
         # Log scroll state
         self.auto_follow = True
@@ -815,10 +817,12 @@ class Dashboard:
             load = self.load_avg
             mem_t = self.mem_total
             mem_u = self.mem_used
+            mem_a = self.mem_actual
             swap_t = self.swap_total
             swap_u = self.swap_used
             ccpu = self.container_cpu
-            cmem = self.container_mem
+            cmem_b = self.container_mem_bytes
+            cmem_l = self.container_mem_limit
 
         row = y + 2
 
@@ -827,34 +831,64 @@ class Dashboard:
         self._safe_addstr(stdscr, row, x + 2, f"Load: {load}")
         row += 2
 
-        # RAM
-        mem_pct = int(mem_u * 100 / mem_t) if mem_t > 0 else 0
-        self._safe_addstr(stdscr, row, x + 2, f"RAM:  {mem_u}/{mem_t} MiB")
+        # RAM — show total actual usage with bar, then breakdown
+        actual_pct = int(mem_a * 100 / mem_t) if mem_t > 0 else 0
+        actual_gb = mem_a / 1024
+        total_gb = mem_t / 1024
+
+        self._safe_addstr(stdscr, row, x + 2,
+                          f"RAM:  {actual_gb:.1f} / {total_gb:.0f} GiB used")
         row += 1
 
         if row < y + height:
             bar_w = min(20, width - 6)
-            self._draw_bar(stdscr, row, x + 2, bar_w, mem_pct, C_BLUE)
-            self._safe_addstr(stdscr, row, x + 2 + bar_w + 1, f"{mem_pct}%")
+            # Color: green < 70%, yellow 70-85%, red > 85%
+            bar_color = C_GREEN if actual_pct < 70 else (
+                C_YELLOW if actual_pct < 85 else C_RED)
+            self._draw_bar(stdscr, row, x + 2, bar_w, actual_pct, bar_color)
+            self._safe_addstr(stdscr, row, x + 2 + bar_w + 1,
+                              f"{actual_pct}%")
             row += 1
 
-        # Swap
+        # Breakdown: OS vs Container
         if row < y + height:
-            self._safe_addstr(stdscr, row, x + 2,
-                              f"Swap: {swap_u}/{swap_t} MiB")
-            row += 2
-
-        # Container stats
-        if row < y + height:
-            self._safe_addstr(stdscr, row, x + 2, "Container:", curses.A_BOLD)
-            row += 1
-        if row < y + height:
-            if ccpu or cmem:
+            os_mib = max(0, mem_a - cmem_b) if cmem_b > 0 else mem_u
+            os_gb = os_mib / 1024
+            cmem_gb = cmem_b / 1024
+            # model cache = container total - programs-only portion
+            # programs-only ~ mem_used (reclaimable view)
+            cache_gb = max(0, cmem_gb - mem_u / 1024)
+            prog_gb = cmem_gb - cache_gb
+            if cmem_b > 0:
                 self._safe_addstr(stdscr, row, x + 4,
-                                  f"CPU: {ccpu}  MEM: {cmem}")
+                                  f"OS: {os_gb:.1f}G"
+                                  f"  Model: {prog_gb:.1f}G"
+                                  f"+{cache_gb:.1f}G cache")
             else:
                 self._safe_addstr(stdscr, row, x + 4,
-                                  "(not running)", curses.A_DIM)
+                                  f"(container not running)")
+            row += 1
+
+        # Swap — only show if swap is being used
+        if row < y + height:
+            if swap_u > 100:  # only show if >100 MiB used
+                swap_gb = swap_u / 1024
+                swap_color = (curses.color_pair(C_YELLOW) if swap_u < 4096
+                              else curses.color_pair(C_RED))
+                self._safe_addstr(stdscr, row, x + 2,
+                                  f"Swap: {swap_gb:.1f} GiB on disk",
+                                  swap_color)
+            else:
+                self._safe_addstr(stdscr, row, x + 2,
+                                  "Swap: none", curses.A_DIM)
+            row += 1
+
+        # Free RAM
+        if row < y + height:
+            free_gb = (mem_t - mem_a) / 1024
+            self._safe_addstr(stdscr, row, x + 2,
+                              f"Free: {free_gb:.1f} GiB",
+                              curses.A_DIM)
 
     # ── Control Bar ────────────────────────────────────────────────────────
 
@@ -1176,17 +1210,33 @@ class Dashboard:
                     info[parts[0].rstrip(':')] = int(parts[1])
 
             mt = info.get('MemTotal', 0) // 1024
+            mf = info.get('MemFree', 0) // 1024
             ma = info.get('MemAvailable', 0) // 1024
             st = info.get('SwapTotal', 0) // 1024
             sf = info.get('SwapFree', 0) // 1024
 
             with self.lock:
                 self.mem_total = mt
-                self.mem_used = mt - ma
+                self.mem_used = mt - ma       # programs only (reclaimable)
+                self.mem_actual = mt - mf     # total in use including cache
                 self.swap_total = st
                 self.swap_used = st - sf
         except (OSError, IndexError, ValueError):
             pass
+
+    @staticmethod
+    def _parse_docker_mem(s):
+        """Parse Docker memory string like '47.78GiB' to MiB."""
+        s = s.strip()
+        for suffix, factor in [('GiB', 1024), ('MiB', 1), ('KiB', 1/1024),
+                                ('GB', 1000*1000/1024/1024*1000),
+                                ('MB', 1000*1000/1024/1024)]:
+            if s.endswith(suffix):
+                try:
+                    return int(float(s[:-len(suffix)]) * factor)
+                except ValueError:
+                    return 0
+        return 0
 
     def _poll_container(self):
         try:
@@ -1198,18 +1248,29 @@ class Dashboard:
             )
             if r.returncode == 0 and r.stdout.strip():
                 parts = r.stdout.strip().split('|')
+                cpu = parts[0].strip() if parts else ""
+                mem_str = parts[1].strip() if len(parts) > 1 else ""
+                # Parse "47.78GiB / 62.7GiB" into usage and limit
+                mem_bytes = 0
+                mem_limit = 0
+                if '/' in mem_str:
+                    usage_s, limit_s = mem_str.split('/')
+                    mem_bytes = self._parse_docker_mem(usage_s)
+                    mem_limit = self._parse_docker_mem(limit_s)
                 with self.lock:
-                    self.container_cpu = parts[0].strip() if parts else ""
-                    self.container_mem = (parts[1].strip()
-                                          if len(parts) > 1 else "")
+                    self.container_cpu = cpu
+                    self.container_mem_bytes = mem_bytes
+                    self.container_mem_limit = mem_limit
             else:
                 with self.lock:
                     self.container_cpu = ""
-                    self.container_mem = ""
+                    self.container_mem_bytes = 0
+                    self.container_mem_limit = 0
         except (subprocess.TimeoutExpired, FileNotFoundError):
             with self.lock:
                 self.container_cpu = ""
-                self.container_mem = ""
+                self.container_mem_bytes = 0
+                self.container_mem_limit = 0
 
 
 def main():
