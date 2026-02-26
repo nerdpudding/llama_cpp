@@ -12,16 +12,22 @@ Quick reference for recommended client-side settings per model. Use these when c
 | GPT-OSS 120B | Deep reasoning, knowledge, structured output | Yes (configurable low/med/high) | Yes (native) | ~22 t/s |
 | Qwen3-Coder-Next | Coding agents, agentic tasks | No | Yes (native) | ~33 t/s |
 | Qwen3-Next-80B-A3B | General reasoning, knowledge, agentic, ultra-long context | No | Yes (native) | ~33 t/s |
+| Qwen3.5-35B-A3B | Reasoning, coding, multilingual, agentic | Yes (`<think>` blocks, default) | Yes (native) | ~estimated |
+| Qwen3.5-27B | Quality coding, reasoning (dense, all 27B active) | Yes (`<think>` blocks, default) | Yes (native) | ~estimated |
+| Qwen3.5-122B-A10B | Deep reasoning, agentic, terminal/tool use | Yes (`<think>` blocks, default) | Yes (native) | ~estimated |
 
 ## Sampler settings at a glance
 
-| Setting | GLM (general) | GLM (coding/tools) | GPT-OSS (all) | Qwen3-Coder (all) | Qwen3-Next (all) |
-|---------|--------------|-------------------|---------------|-------------------|------------------|
-| temperature | 1.0 | 0.7 | 1.0 | 1.0 | 0.7 |
-| top_p | 0.95 | 1.0 | 1.0 | 0.95 | 0.8 |
-| top_k | — | — | 0 (disabled) | 40 | 20 |
-| min_p | 0.01 | 0.01 | — | 0.01 | — |
-| system prompt | — | — | "Reasoning: low/med/high" | — | — |
+Qwen3.5 settings apply to **all three models** (35B-A3B, 27B, 122B-A10B) — same family, same recommendations.
+
+| Setting | GLM (general) | GLM (coding) | GPT-OSS | Qwen3-Coder | Qwen3-Next | Qwen3.5 all (thinking) | Qwen3.5 all (coding) |
+|---------|--------------|-------------|---------|-------------|------------|------------------------|----------------------|
+| temperature | 1.0 | 0.7 | 1.0 | 1.0 | 0.7 | 1.0 | 0.6 |
+| top_p | 0.95 | 1.0 | 1.0 | 0.95 | 0.8 | 0.95 | 0.95 |
+| top_k | — | — | 0 (disabled) | 40 | 20 | 20 | 20 |
+| min_p | 0.01 | 0.01 | — | 0.01 | — | 0.0 | 0.0 |
+| presence_penalty | — | — | — | — | — | 1.5 (client-side) | 0.0 |
+| system prompt | — | — | "Reasoning: low/med/high" | — | — | — | — |
 
 ---
 
@@ -111,6 +117,33 @@ Source: [Qwen model card "Best Practices"](https://huggingface.co/Qwen/Qwen3-Nex
 - Same UD quant and KV cache considerations as Qwen3-Coder-Next apply.
 
 **Server defaults (models.conf):** `--temp 0.7 --top-p 0.8 --top-k 20` — matches official recommendation. Clients should not need to override.
+
+## Qwen3.5 Family (35B-A3B, 27B, 122B-A10B)
+
+Source: [Qwen3.5 model card "Best Practices"](https://huggingface.co/Qwen/Qwen3.5-35B-A3B), [Unsloth guide](https://docs.unsloth.ai/models/qwen3.5)
+
+**All Qwen3.5 models share the same sampler recommendations.** Four profiles depending on mode and task:
+
+| Setting | Thinking general | Thinking coding | Instruct general | Instruct reasoning |
+|---------|-----------------|-----------------|------------------|--------------------|
+| temperature | 1.0 | 0.6 | 0.7 | 1.0 |
+| top_p | 0.95 | 0.95 | 0.8 | 1.0 |
+| top_k | 20 | 20 | 20 | 40 |
+| min_p | 0.0 | 0.0 | 0.0 | 0.0 |
+| presence_penalty | 1.5 | 0.0 | 1.5 | 2.0 |
+| repetition_penalty | 1.0 (disabled) | 1.0 (disabled) | 1.0 (disabled) | 1.0 (disabled) |
+
+**Important notes:**
+- **Qwen3.5 is a thinking model.** It generates `<think>...</think>` blocks by default. This is the recommended mode — thinking produces the best results.
+- **No soft switch.** Unlike Qwen3, the `/think` and `/nothink` tags are NOT supported. Thinking mode is controlled via the chat template parameter `enable_thinking` (true/false). This is a hard switch per session/request, not per-message.
+- **min_p must be 0.0.** The model card explicitly sets min_p=0.0 across all profiles. llama.cpp defaults to 0.05 — override with `--min-p 0` server-side.
+- **presence_penalty=1.5 is strongly recommended** for general use to prevent repetition. This must be set client-side (it's an API parameter, not a standard llama-server CLI flag). Set it in the client's API request or system configuration.
+- **For coding, use temp=0.6 with presence_penalty=0.0.** Anti-repetition hurts code generation where repeating patterns (loops, similar function signatures) is correct behavior.
+- **Minimum context: 128K tokens** recommended by the model card to preserve thinking capabilities. Default and recommended: 262K.
+- **Recommended output length:** 32,768 tokens for most queries, 81,920 for complex math/programming benchmarks.
+- Same DeltaNet hybrid architecture as Qwen3-Next — `--no-context-shift` required.
+
+**Server defaults (models.conf):** `--temp 1.0 --top-p 0.95 --top-k 20 --min-p 0` — matches the "thinking general" profile. Clients used for coding should override to `temp 0.6` and set `presence_penalty 0.0`. For general use, set `presence_penalty 1.5` client-side.
 
 ## For benchmarks (EvalPlus)
 

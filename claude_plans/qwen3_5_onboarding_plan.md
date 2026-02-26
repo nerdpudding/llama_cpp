@@ -83,19 +83,27 @@ Each model goes through the 8-phase `/add-model` workflow:
 ### Phase 1: Evaluate — DONE (this plan)
 Architecture analyzed, quant selected, sizes verified.
 
-### Phase 2: Download — IN PROGRESS (user downloading)
-Download commands:
-```bash
-# 122B-A10B
-huggingface-cli download unsloth/Qwen3.5-122B-A10B-GGUF Qwen3.5-122B-A10B-UD-Q4_K_XL/ --local-dir models/Qwen3.5-122B-A10B/UD-Q4_K_XL/
-
-# 35B-A3B
-huggingface-cli download unsloth/Qwen3.5-35B-A3B-GGUF Qwen3.5-35B-A3B-UD-Q6_K_XL.gguf --local-dir models/Qwen3.5-35B-A3B/UD-Q6_K_XL/
-
-# 27B Dense
-huggingface-cli download unsloth/Qwen3.5-27B-GGUF Qwen3.5-27B-UD-Q8_K_XL.gguf --local-dir models/Qwen3.5-27B/UD-Q8_K_XL/
+### Phase 2: Download — DONE
+Files on disk:
 ```
-Note: 122B is likely multi-part GGUF — all parts must be in the same directory.
+models/Qwen3.5/
+├── Dense/
+│   └── 27B-UD-Q8_K_XL/
+│       └── Qwen3.5-27B-UD-Q8_K_XL.gguf                          (31 GiB)
+└── MoE/
+    ├── 122B/
+    │   └── US_Q4_K_XL/
+    │       ├── Qwen3.5-122B-A10B-UD-Q4_K_XL-00001-of-00003.gguf (metadata)
+    │       ├── Qwen3.5-122B-A10B-UD-Q4_K_XL-00002-of-00003.gguf (47 GiB)
+    │       └── Qwen3.5-122B-A10B-UD-Q4_K_XL-00003-of-00003.gguf (18 GiB)
+    └── 35B/
+        └── UD6_K_XL/
+            └── Qwen3.5-35B-A3B-UD-Q6_K_XL.gguf                  (29 GiB)
+```
+MODEL paths for models.conf (relative to models/):
+- `Qwen3.5/MoE/122B/US_Q4_K_XL/Qwen3.5-122B-A10B-UD-Q4_K_XL-00001-of-00003.gguf`
+- `Qwen3.5/MoE/35B/UD6_K_XL/Qwen3.5-35B-A3B-UD-Q6_K_XL.gguf`
+- `Qwen3.5/Dense/27B-UD-Q8_K_XL/Qwen3.5-27B-UD-Q8_K_XL.gguf`
 
 ### Phase 3: Create production profiles (gpu-optimizer agent)
 For each model, create a `models.conf` entry following the decision tree:
