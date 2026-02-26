@@ -191,19 +191,20 @@ Qwen3.5 settings apply to all three Qwen3.5 models (35B-A3B, 27B, 122B-A10B). Fu
 
 Coding benchmark: 164 Python problems (HumanEval+), pass@1, greedy decoding. HumanEval+ uses 80x more tests than standard HumanEval.
 
-### Local results (2026-02-26)
+### Local results (2026-02-27)
 
-| # | Model | HumanEval | HumanEval+ | vs published |
-|---|-------|-----------|------------|--------------|
-| 1 | Claude Opus 4.6 | 98.2% | 95.1% | +4.0pp |
-| 2 | Qwen3.5-122B-A10B UD-Q4_K_XL | 97.6% | 94.5% | — |
-| 3 | Claude Opus 4.6 (thinking) | 99.4% | 93.9% | +5.2pp |
-| 4 | Qwen3-Next-80B-A3B UD-Q5_K_XL † | 98.2% | 93.9% | — |
-| 5 | Qwen3-Coder-Next UD-Q5_K_XL † | 93.9% | 90.9% | -0.2pp |
-| 6 | Qwen3.5-35B-A3B UD-Q6_K_XL | 95.1% | 90.9% | — |
-| 7 | GLM-4.7 Flash Q8_0 * | 89.0% | 87.2% | +2.0pp |
-| 8 | GPT-OSS 120B F16 † | 93.3% | 87.2% | +5.0pp |
-| 9 | GLM-4.7 Flash Q4_K_M * | 87.8% | 83.5% | +0.8pp |
+| # | Model | HumanEval | HumanEval+ | Speed | vs published |
+|---|-------|-----------|------------|-------|--------------|
+| 1 | Claude Opus 4.6 | 98.2% | 95.1% | (API) | +4.0pp |
+| 2 | Qwen3.5-27B UD-Q6_K_XL (dense) | 98.2% | 94.5% | ~31 t/s | — |
+| 3 | Qwen3.5-122B-A10B UD-Q4_K_XL | 97.6% | 94.5% | ~18 t/s | — |
+| 4 | Claude Opus 4.6 (thinking) | 99.4% | 93.9% | (API) | +5.2pp |
+| 5 | Qwen3-Next-80B-A3B UD-Q5_K_XL † | 98.2% | 93.9% | ~33 t/s | — |
+| 6 | Qwen3.5-35B-A3B UD-Q6_K_XL | 95.1% | 90.9% | ~120 t/s | — |
+| 7 | Qwen3-Coder-Next UD-Q5_K_XL † | 93.9% | 90.9% | ~33 t/s | -0.2pp |
+| 8 | GLM-4.7 Flash Q8_0 * | 89.0% | 87.2% | ~112 t/s | +2.0pp |
+| 9 | GPT-OSS 120B F16 † | 93.3% | 87.2% | ~22 t/s | +5.0pp |
+| 10 | GLM-4.7 Flash Q4_K_M * | 87.8% | 83.5% | ~147 t/s | +0.8pp |
 
 † Retired model (2026-02-26) — benchmark scores preserved for reference.
 
