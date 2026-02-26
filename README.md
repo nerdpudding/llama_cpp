@@ -213,6 +213,16 @@ Coding benchmark: 164 Python problems (HumanEval+), pass@1, greedy decoding. Hum
 
 Full results with proprietary model comparisons: [benchmarks/evalplus/results/REPORT.md](benchmarks/evalplus/results/REPORT.md)
 
+### Reading these results
+
+HumanEval is a narrow benchmark: 164 short, well-defined Python functions. It measures one specific skill — writing a correct function from a docstring. Models that score 85-98% on this test are not necessarily 85-98% as capable as each other in practice.
+
+**What these scores show:** local open-source models are genuinely competitive at structured coding tasks. A 3B-active MoE model running at 120 t/s locally can match a proprietary model on this specific benchmark.
+
+**What these scores don't show:** real-world capability differences in complex reasoning, multi-file code generation, following ambiguous instructions, consistency across diverse domains, or long multi-turn conversations. Proprietary models with orders of magnitude more parameters invest those parameters in breadth, robustness, and handling edge cases — qualities that narrow benchmarks don't capture.
+
+**Practical takeaway:** local models are excellent tools for experts who know how to pick the right model for the task, craft good prompts, and evaluate the output. They're not drop-in replacements for general-purpose assistants across all use cases. The benchmark numbers help compare models within this project, not make absolute claims about model quality.
+
 ### Running benchmarks
 
 ```bash
