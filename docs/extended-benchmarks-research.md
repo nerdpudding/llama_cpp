@@ -58,6 +58,17 @@ llama.cpp OpenAI-compatible API without days of compute or complex infrastructur
 
 ---
 
+## Selection criteria
+
+Benchmarks in this project are selected primarily for practical ease of setup and evaluation:
+
+1. **Automated evaluation** — objectively correct answers (multiple-choice, exact match). No LLM-as-judge, no human evaluation. Keeps results reproducible and the pipeline simple.
+2. **Runs via OpenAI-compatible API** — works by sending prompts to a local endpoint. No custom model loading or framework-specific code.
+3. **Reasonable runtime** — hours, not days.
+4. **Published frontier scores available** — enables direct comparison with proprietary models.
+
+This means the current and near-term benchmarks test knowledge recall, pattern recognition, and structured problem-solving. More complex benchmarks that test real-world agentic capability (SWE-bench, Terminal-Bench, tau2-bench) require more infrastructure but are not ruled out for the future.
+
 ## Recommended additions
 
 The best combination for comparing local models against frontier scores:

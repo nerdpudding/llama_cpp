@@ -223,6 +223,8 @@ HumanEval is a narrow benchmark: 164 short, well-defined Python functions. It me
 
 **Practical takeaway:** local models are excellent tools for experts who know how to pick the right model for the task, craft good prompts, and evaluate the output. They're not drop-in replacements for general-purpose assistants across all use cases. The benchmark numbers help compare models within this project, not make absolute claims about model quality.
 
+**Why these benchmarks?** Current benchmarks are selected for practical ease: automated evaluation (no LLM judge), runs via the local API, completes in hours, and has published frontier scores for comparison. This limits scope to objectively measurable tasks. See [extended benchmarks research](docs/extended-benchmarks-research.md) for planned additions covering reasoning, generalization, and knowledge breadth.
+
 ### Running benchmarks
 
 ```bash
