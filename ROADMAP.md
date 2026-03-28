@@ -19,6 +19,14 @@ GPU placement uses `--fit` with `--n-gpu-layers auto` — FIT automatically dist
 
 ## Done
 
+### llama.cpp upstream update (2026-03-28)
+- Updated from `723c71064` (2026-02-26) to `b0f0dd3e5` (2026-03-28), ~397 commits
+- Notable upstream additions: fused GATED_DELTA_NET CUDA kernel for DeltaNet models, native bf16 flash attention, CUDA synchronization improvements, Qwen3.5 model detection updates, server built-in tools backend, FIT gate_up tensor regex fix
+- No Dockerfile changes needed — same build flags, same CUDA 13.0 base
+- Tested: GLM Q8 and Qwen3.5-35B confirmed working after rebuild
+- Rollback tag preserved: `local-working-2026-02-26`
+- Plan: `archive/2026-03-28_PLAN_llama_cpp_update.md`
+
 ### Model switching from dashboard and management API (2026-02-23)
 - Model picker overlay in dashboard (press `m`) — arrow keys + Enter to select, `Esc` to cancel
 - `switch_model()` method: stops container, regenerates `.env` from selected profile, starts new container, reconnects log stream, polls health
