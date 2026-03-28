@@ -72,7 +72,7 @@ For non-trivial changes, follow this order:
 │   ├── GLM-4.7-Flash/
 │   ├── Qwen3.5/
 │   │   ├── MoE/
-│   │   │   ├── 35B/                  # Qwen3.5-35B-A3B UD-Q6_K_XL
+│   │   │   ├── 35B/                  # Qwen3.5-35B-A3B UD-Q6_K_XL + CL-Distill Q6_K + Q8_0
 │   │   │   └── 122B/                 # Qwen3.5-122B-A10B UD-Q4_K_XL
 │   │   └── Dense/
 │   │       └── 27B-UD-Q8_K_XL/      # Qwen3.5-27B (pending — CUDA crash)

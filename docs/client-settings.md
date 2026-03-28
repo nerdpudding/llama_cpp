@@ -12,6 +12,8 @@ Active models:
 |-------|----------|----------|-------------|-------|
 | GLM-4.7 Flash | General tasks, reasoning, tool calling | Yes (`<think>` blocks) | Yes (native) | 112-147 t/s |
 | Qwen3.5-35B-A3B | Reasoning, coding, multilingual, agentic | Yes (`<think>` blocks, default) | Yes (native) | ~120 t/s |
+| Qwen3.5-35B-A3B CL-Distill Q6 | Reasoning, coding, agentic — faster CL-distilled variant | Yes (`<think>` blocks, default) | Yes (native) | ~162 t/s |
+| Qwen3.5-35B-A3B CL-Distill Q8 | Highest quality 35B — CL-distilled Q8 variant | Yes (`<think>` blocks, default) | Yes (native) | ~80 t/s |
 | Qwen3.5-122B-A10B | Deep reasoning, agentic, terminal/tool use | Yes (`<think>` blocks, default) | Yes (native) | ~18 t/s |
 | Qwen3.5-27B | Quality coding, reasoning (dense, all 27B active) | Yes (`<think>` blocks, default) | Yes (native) | ~31 t/s (Q6) |
 
@@ -25,7 +27,7 @@ Retired models (2026-02-26) — settings preserved below for reference:
 
 ## Sampler settings at a glance
 
-Qwen3.5 settings apply to **all three models** (35B-A3B, 27B, 122B-A10B) — same family, same recommendations.
+Qwen3.5 settings apply to **all Qwen3.5 models** (35B-A3B UD, 35B-A3B CL-Distill Q6/Q8, 27B, 122B-A10B) — same family, same recommendations.
 
 Active models:
 
@@ -137,7 +139,7 @@ Source: [Qwen model card "Best Practices"](https://huggingface.co/Qwen/Qwen3-Nex
 
 **Server defaults (models.conf):** `--temp 0.7 --top-p 0.8 --top-k 20` — matches official recommendation. Clients should not need to override.
 
-## Qwen3.5 Family (35B-A3B, 27B, 122B-A10B)
+## Qwen3.5 Family (35B-A3B UD, 35B-A3B CL-Distill Q6/Q8, 27B, 122B-A10B)
 
 Source: [Qwen3.5 model card "Best Practices"](https://huggingface.co/Qwen/Qwen3.5-35B-A3B), [Unsloth guide](https://docs.unsloth.ai/models/qwen3.5)
 

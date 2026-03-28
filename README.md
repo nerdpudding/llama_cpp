@@ -162,6 +162,8 @@ All active models are defined in `models.conf`. Use the section ID with `./start
 | `glm-flash-q8` | GLM-4.7 Flash Q8_0 | MoE | ~112 t/s | 128K | Quality reasoning, tools |
 | `glm-flash-exp` | GLM-4.7 Flash Q8_0 (experimental) | MoE | ~112 t/s | 128K | Experimental |
 | `qwen35-35b-q6` | Qwen3.5-35B-A3B UD-Q6_K_XL | MoE | ~120 t/s | 262K | Thinking, reasoning, coding, agentic |
+| `qwen35-35b-cld-q6` | Qwen3.5-35B-A3B CL-Distill Q6_K | MoE | ~162 t/s | 262K | Thinking, reasoning, coding, agentic — faster CL-distilled variant |
+| `qwen35-35b-cld-q8` | Qwen3.5-35B-A3B CL-Distill Q8_0 | MoE | ~80 t/s | 262K | Thinking, highest quality 35B — CL-distilled Q8 variant |
 | `qwen35-122b-q4` | Qwen3.5-122B-A10B UD-Q4_K_XL | MoE | ~18 t/s | 262K | Deep reasoning, quality, coding |
 | `qwen35-27b-q8` | Qwen3.5-27B UD-Q8_K_XL | Dense | ~20-30 t/s (est.) | 262K | Pending — CUDA crash under investigation |
 
@@ -179,11 +181,11 @@ Recommended client-side settings per model. Most clients override server default
 | min_p | 0.01 | 0.01 | 0.0 | 0.0 |
 | presence_penalty | — | — | 1.5 (client-side) | 0.0 |
 
-Qwen3.5 settings apply to all three Qwen3.5 models (35B-A3B, 27B, 122B-A10B). Full details and rationale: [docs/client-settings.md](docs/client-settings.md)
+Qwen3.5 settings apply to all Qwen3.5 models (35B-A3B UD, 35B-A3B CL-Distill, 27B, 122B-A10B). Full details and rationale: [docs/client-settings.md](docs/client-settings.md)
 
 ### Model-specific notes
 
-**Qwen3.5 thinking model:** All three Qwen3.5 models generate `<think>` blocks by default. Thinking cannot be disabled with `/nothink` (unlike Qwen3) — use the chat template parameter `enable_thinking=false` if your client supports it. `presence_penalty=1.5` is strongly recommended for general use and must be set client-side.
+**Qwen3.5 thinking model:** All Qwen3.5 models generate `<think>` blocks by default. Thinking cannot be disabled with `/nothink` (unlike Qwen3) — use the chat template parameter `enable_thinking=false` if your client supports it. `presence_penalty=1.5` is strongly recommended for general use and must be set client-side.
 
 **Retired model notes (for reference):** GPT-OSS 120B, Qwen3-Coder-Next, and Qwen3-Next-80B-A3B were retired 2026-02-26. Historical sampler settings and notes for these models are preserved in [docs/client-settings.md](docs/client-settings.md).
 
@@ -355,7 +357,7 @@ See [ROADMAP.md](ROADMAP.md) for current status, completed milestones, and futur
 │   ├── GLM-4.7-Flash/
 │   ├── Qwen3.5/
 │   │   ├── MoE/
-│   │   │   ├── 35B/               # Qwen3.5-35B-A3B UD-Q6_K_XL
+│   │   │   ├── 35B/               # Qwen3.5-35B-A3B UD-Q6_K_XL + CL-Distill Q6_K + Q8_0
 │   │   │   └── 122B/              # Qwen3.5-122B-A10B UD-Q4_K_XL
 │   │   └── Dense/
 │   │       └── 27B-UD-Q8_K_XL/   # Qwen3.5-27B (pending — CUDA crash)

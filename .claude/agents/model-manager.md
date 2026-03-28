@@ -37,6 +37,8 @@ models/
 ├── Qwen3.5/
 │   ├── MoE/
 │   │   ├── 35B/                  (~29 GiB, MoE 35B-A3B, UD-Q6_K_XL)
+│   │   │   ├── Q6/               (~27 GiB, MoE 35B-A3B, CL-Distill Q6_K)
+│   │   │   └── Q8/               (~34 GiB, MoE 35B-A3B, CL-Distill Q8_0)
 │   │   └── 122B/                 (~65 GiB, MoE 122B-A10B, UD-Q4_K_XL, 3 parts)
 │   └── Dense/
 │       └── 27B-UD-Q8_K_XL/      (~31 GiB, dense 27B, pending — CUDA crash)

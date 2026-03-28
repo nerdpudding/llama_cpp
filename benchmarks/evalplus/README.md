@@ -153,6 +153,8 @@ Profiles are defined in `models.conf` with a `bench-` prefix. They use the same 
 | `bench-glm-flash-q4` | GLM-4.7 Flash Q4_K_M | Smallest, fastest — good for smoke testing |
 | `bench-glm-flash-q8` | GLM-4.7 Flash Q8_0 | Higher quality quant |
 | `bench-qwen35-35b-q6` | Qwen3.5-35B-A3B UD-Q6_K_XL | Thinking model, DeltaNet MoE |
+| `bench-qwen35-35b-cld-q6` | Qwen3.5-35B-A3B CL-Distill Q6_K | Thinking model, DeltaNet MoE — CL-distilled variant |
+| `bench-qwen35-35b-cld-q8` | Qwen3.5-35B-A3B CL-Distill Q8_0 | Thinking model, DeltaNet MoE — CL-distilled Q8 variant |
 | `bench-qwen35-122b-q4` | Qwen3.5-122B-A10B UD-Q4_K_XL | Thinking model, DeltaNet MoE, CPU offload |
 | `bench-qwen35-27b-q8` | Qwen3.5-27B UD-Q8_K_XL | Thinking model, dense (all 27B active), DeltaNet — pending CUDA crash investigation |
 | `bench-opus4.6-thinking` | Claude Opus 4.6 | Extended thinking (via Claude Code) |

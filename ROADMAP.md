@@ -2,12 +2,14 @@
 
 ## Current Status
 
-Five models are active in `models.conf` and selectable via `./start.sh` on a dual-GPU desktop (RTX 4090 + RTX 5070 Ti), plus one pending:
+Seven models are active in `models.conf` and selectable via `./start.sh` on a dual-GPU desktop (RTX 4090 + RTX 5070 Ti), plus one pending:
 
 - **GLM-4.7 Flash Q4_K_M** — ~147 t/s, 128K context, fast general tasks, reasoning, tool calling (MoE)
 - **GLM-4.7 Flash Q8_0** — ~112 t/s, 128K context, higher quality reasoning and tool calling (MoE)
 - **GLM-4.7 Flash Q8_0 (experimental)** — ~112 t/s, 128K context, experimental config (MoE)
 - **Qwen3.5-35B-A3B UD-Q6_K_XL** — ~120 t/s, 262K context, thinking model, coding, agentic tasks (MoE, DeltaNet)
+- **Qwen3.5-35B-A3B CL-Distill Q6_K** — ~162 t/s, 262K context, cross-layer distilled variant, faster than UD (MoE, DeltaNet)
+- **Qwen3.5-35B-A3B CL-Distill Q8_0** — ~80 t/s, 262K context, highest quality 35B variant (MoE, DeltaNet)
 - **Qwen3.5-122B-A10B UD-Q4_K_XL** — ~18 t/s, 262K context, quality king, deep reasoning, coding (MoE, DeltaNet, 10B active)
 - **Qwen3.5-27B UD-Q8_K_XL** — pending (CUDA crash on first inference — illegal memory access on device 0, needs investigation)
 
