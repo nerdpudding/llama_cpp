@@ -400,6 +400,68 @@ Every setting here is a compromise forced by 24 GB VRAM. FP8 instead of FP16 mea
 
 The key insight: with the current desktop, the settings themselves are the bottleneck — not just speed. The Spark doesn't just make the same training faster; it enables training configurations (FP16, 720p) that are physically impossible on the desktop. The training would be slower in absolute compute speed than an RTX 5090, but it would be at better settings (higher precision, higher resolution) that should produce better results.
 
+### LTX-2.3 LoRA: What we now know after extensive testing
+
+*Added after actual LTX-2.3 22B LoRA training experience (March 2026). The v2 estimates above were written before training started — these are findings from real training runs across multiple GPUs.*
+
+**The real bottleneck on 24 GB is block swapping, not compute or attention.**
+
+The LTX-2.3 model has 48 transformer blocks. With 24 GB VRAM (FP8), 20 blocks must be swapped to CPU RAM via PCIe every training step. This means ~42% of the model shuttles back and forth over PCIe for every forward and backward pass. The measured impact:
+
+- Flash attention (mathematically identical, faster kernel): only **~4% speedup** — because the GPU spends most of its time waiting for PCIe transfers, not computing attention.
+- `torch.compile` (kernel fusion, 10-15% speedup on other models): **blocked entirely** — musubi-tuner disables it when block swapping is active because compiled graphs and dynamic block movement are incompatible.
+- Training speed is **dominated by PCIe data transfer**, not by GPU compute. The 4090 is actually underutilized.
+
+**NF4 quantization: tested and rejected.** After 15000 steps of NF4 training on the 4090 (no block swapping, torch.compile enabled, 720px), the output quality is insufficient — malformations, skin artefacts, poor likeness regardless of text encoder. NF4 is faster and more convenient but the 4-bit base model precision is too low for acceptable results.
+
+**FP8 at 720px on 4090:** works with 20 blocks_to_swap. ~9-13 s/it, ~45 GB RAM, VRAM at the absolute edge (~23.5-24 GB). Functional but slow due to block swapping.
+
+**Cloud training changes everything.** Instead of buying hardware, renting a GPU on RunPod at $1.61-1.69/hr turns out to be far more cost-effective for occasional LoRA training:
+
+| GPU | s/it (measured) | $/hr | Cost per 1000 steps | 15000 steps total |
+|-----|-----------------|------|---------------------|-------------------|
+| RTX 4090 (local, FP8) | ~9-13 | free (electricity) | ~€0.50 electricity | ~€7.50 |
+| B200 (RunPod, bf16) | **4.1** | $4.99 | $5.70 | ~$86 |
+| RTX PRO 6000 BW (RunPod, bf16) | **6.6** | $1.69 | **$3.10** | **~$46** |
+
+The cloud runs train in **bf16** at rank 64 — no quantization compromises, no block swapping, torch.compile enabled. The PRO 6000 at ~$3.10 per 1000 steps is the sweet spot: half the cost of the B200 per step, with the same training quality.
+
+**Cost to break even on hardware:**
+
+| Hardware | Price | Break-even at ~$10/LoRA (cloud) |
+|----------|-------|---------------------------------|
+| DGX Spark | ~€4,500 | ~450 LoRAs |
+| RTX PRO 6000 BW | ~€9,500 | ~950 LoRAs |
+
+These devices do more than just LoRA training (inference, multimodel, etc.), so the real break-even is lower. But for someone who trains a few LoRAs per month, cloud is the obvious choice. Own hardware only makes sense with daily/weekly training or when the devices serve multiple purposes.
+
+**What this means for the hardware comparison:**
+
+| Factor | Current 4090 (24 GB) | RTX 5090 (32 GB) | DGX Spark (128 GB) | Pro 6000 (96 GB) |
+|--------|----------------------|-------------------|---------------------|-------------------|
+| blocks_to_swap | 20 of 48 (FP8) | ~3-5 (maybe 0 with W8A8) | **0** | **0** |
+| PCIe bottleneck | Heavy — caps speed | Reduced | **Eliminated** | **Eliminated** |
+| torch.compile | Blocked | Likely possible | **Yes** | **Yes** |
+| FP16/bf16 precision | OOM | Possible at 512px | **Yes, any resolution** | **Yes, any resolution** |
+| 608px resolution | FP8 only, 13 blocks swap | Comfortable | **Easy** | **Easy** |
+| 720px resolution | FP8 only, 20 blocks swap | Feasible with some swap | **Easy** | **Easy** |
+| 1080px resolution | Impossible | OOM | **Worth trying** | **Yes** |
+| Cloud alternative | — | — | $10/LoRA on RunPod | $10/LoRA on RunPod |
+| Training speed (same settings) | ~8 s/it (baseline) | ~3-5 s/it | ~3-5 s/it | **~2-3 s/it** |
+| Training speed (FP16 + 720p) | Impossible | ~4-5 s/it | ~7-10 s/it | **~3-4 s/it** |
+
+The RTX 5090's 8 GB extra VRAM is enough to reduce block swapping significantly, which directly translates to speed because PCIe is the bottleneck. But it's still a consumer card — at 720p with FP16, some swapping would still be needed.
+
+The DGX Spark eliminates all memory constraints: zero block swapping, torch.compile enabled, FP16 precision, high resolution — all simultaneously. The GB10's lower raw compute (~1000 TFLOPS FP4 vs 4090's ~660 FP8) means per-step speed at current settings is similar, but the ability to train at better settings (higher precision, higher resolution) should produce better LoRA quality.
+
+**Important: trained LoRAs are hardware-independent.** A LoRA trained on any hardware works identically for inference on any other. Training on the Spark at FP16/720p and running inference on the 4090 in ComfyUI is a perfectly valid workflow.
+
+**Preferred upgrade path for this workload:**
+
+1. **DGX Spark** — Biggest immediate impact on training quality. Removes all VRAM compromises. Trained LoRAs still work on the existing 4090 for inference. The 4090 remains the better inference card (higher bandwidth). Two machines, each doing what it's best at.
+2. **Future: new PC + RTX 5090** — Faster training than current setup (~2x), plus improves inference, gaming, and everything else. Doesn't fully eliminate block swapping but reduces it substantially.
+3. **Dream tier: RTX Pro 6000 Blackwell (96 GB)** — Massive VRAM + top-tier compute. Would give both the speed of a discrete GPU and the memory headroom of the Spark. But at ~€9,500+ for the card alone, this is not a realistic near-term option.
+
 ---
 
 ## The hardware alternatives
@@ -615,7 +677,7 @@ What's the primary goal?
 
 5. **Independent review confirms the Spark's niche.** Sebastian Raschka's [hands-on benchmarks](https://sebastianraschka.com/blog/2025/dgx-impressions.html) found the Spark competitive with an A100 for small-scale training and roughly on par with an H100 for single-sequence inference — while costing a fraction of either. His conclusion that the Spark is best understood as "a development and prototyping system" for CUDA-based workflows before cloud deployment matches the pattern seen here: strong for memory-bound workloads, not a compute replacement for enterprise GPUs.
 
-6. **Video model training exposes the real wall.** The LTX2 LoRA scenario makes the desktop's limits concrete: FP8 instead of FP16, 512p instead of 720p, ~60% RAM usage, all because 24 GB VRAM and 64 GB DDR4 can't hold the full training state. The Spark doesn't just speed up the same training — it enables configurations that are physically impossible on the current hardware. Slower compute, but better settings, which should produce better results.
+6. **Video model training exposes the real wall — but cloud is the practical solution.** The LTX-2.3 22B LoRA scenario makes the desktop's limits concrete: FP8 with 20-block swapping at 720px, NF4 tested and rejected (insufficient quality after 15000 steps). But renting an RTX PRO 6000 on RunPod at $1.69/hr solves all of this: bf16 precision, no block swapping, torch.compile, ~6.6 s/it, at ~$46 for a full 15000-step run. The Spark would eliminate the compromises permanently, but at ~€4,500 it takes hundreds of training runs to justify over ~$10/run cloud costs. Cloud training is the right answer for occasional use.
 
 7. **Power efficiency favors the Spark.** 150W at the wall (whole device) vs 137W for just GPUs on the desktop (the whole PC is much more). For always-on inference or in an office, the Spark is far more practical.
 
@@ -623,4 +685,4 @@ What's the primary goal?
 
 9. **The ultimate solution exists but isn't affordable now.** An AM5 platform with an RTX Pro 6000 96 GB (~€11,250 net) would be superior in every dimension — 96 GB at full GPU speed plus 128 GB DDR5. But the current DDR5 memory crisis makes even the platform upgrade expensive (~€2,350+ for CPU/mobo/RAM alone, up from the ~€1,900 estimated earlier). This is a 2+ year goal, not a current option.
 
-10. **For my specific situation, the Spark is the right next step.** It solves the immediate bottleneck (models and training that don't fit or are compromised), doesn't touch the gaming PC, costs less than half of the ultimate solution, and doesn't preclude any future upgrade. The gaming PC stays the fast-inference and gaming machine; the Spark becomes the dedicated AI workhorse for everything that doesn't fit on GPUs.
+10. **For my specific situation, the Spark is no longer the clear next step for training.** Cloud GPU rental at ~$10/LoRA eliminates the most pressing training bottleneck without any hardware investment. The Spark still makes sense for inference (large models, multimodel pipelines, always-on serving) and for daily/weekly training where cloud costs would accumulate. But for occasional LoRA training (a few per month), cloud is more cost-effective. The gaming PC stays the fast-inference machine; cloud handles the heavy training; the Spark remains a future option when the use case grows beyond what cloud reasonably covers.
