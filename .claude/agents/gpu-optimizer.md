@@ -147,6 +147,7 @@ Result on Qwen3-Next (53 GB) at 262K context (with FIT_TARGET=128,1024):
 | Qwen3.5-35B-A3B CL-Distill | MoE | 35B | 3B | 256/layer, 8 routed + 1 shared | 40 (75% DeltaNet) | Q6: 27 GiB, Q8: 34 GiB | active |
 | Qwen3.5-122B-A10B | MoE | 122B | 10B | 256/layer, 8 routed + 1 shared | 48 (75% DeltaNet) | Q4: 65 GiB | active |
 | Qwen3.5-27B | **Dense** | 27B | **27B** | none (FFN, not MoE) | 64 (75% DeltaNet) | Q8: 31 GiB | pending (CUDA crash) |
+| Mistral Small 4 119B | MoE | 119B | 6.5B | 128/layer, 4 active | 36 (MLA, mistral4 arch) | Q3_K_XL: ~54 GB (3 parts) | active |
 | GPT-OSS 120B | MoE | 116.8B | 5.1B | 128/layer, 4 active | 36 (18 SWA) | F16: 61 GB | **retired 2026-02-26** |
 | Qwen3-Coder-Next | MoE | 80B | 3B | 512/layer, 10 active + 1 shared | 48 (75% DeltaNet) | Q5: 57 GB, Q6: 64 GB | **retired 2026-02-26** |
 | Qwen3-Next-80B-A3B | MoE | 80B | 3B | 512/layer, 10 active + 1 shared | 48 (75% DeltaNet) | Q5: 53 GB | **retired 2026-02-26** |

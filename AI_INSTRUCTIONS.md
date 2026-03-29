@@ -68,7 +68,8 @@ For non-trivial changes, follow this order:
 │   │   ├── README_modelcard_qwen3_coder_next.md     # retired model
 │   │   ├── README_Qwen3-Next-80B-A3B-Instruct-GGUF.md  # retired model
 │   │   ├── README_Qwen3.5-35B-A3B-GGUF.md
-│   │   └── README_Qwen3.5-122B-A10B-GGUF.md
+│   │   ├── README_Qwen3.5-122B-A10B-GGUF.md
+│   │   └── README_Mistral-Small-4-119B-2603-GGUF.md
 │   ├── GLM-4.7-Flash/
 │   ├── Qwen3.5/
 │   │   ├── MoE/
@@ -76,6 +77,9 @@ For non-trivial changes, follow this order:
 │   │   │   └── 122B/                 # Qwen3.5-122B-A10B UD-Q4_K_XL
 │   │   └── Dense/
 │   │       └── 27B-UD-Q8_K_XL/      # Qwen3.5-27B (pending — CUDA crash)
+│   ├── Mistral-Small-4-119b-2603/
+│   │   └── MOE/
+│   │       └── UD-Q3_K_XL/          # Mistral Small 4 119B UD-Q3_K_XL (~54 GB, 3 parts)
 │   ├── GPT-OSS-120b/                 # retired 2026-02-26 (files may remain on disk)
 │   ├── Qwen3-Coder-Next/             # retired 2026-02-26 (files may remain on disk)
 │   │   └── UD-Q5_K_XL/

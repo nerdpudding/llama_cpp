@@ -16,6 +16,7 @@ Active models:
 | Qwen3.5-35B-A3B CL-Distill Q8 | Highest quality 35B — CL-distilled Q8 variant | Yes (`<think>` blocks, default) | Yes (native) | ~80 t/s |
 | Qwen3.5-122B-A10B | Deep reasoning, agentic, terminal/tool use | Yes (`<think>` blocks, default) | Yes (native) | ~18 t/s |
 | Qwen3.5-27B | Quality coding, reasoning (dense, all 27B active) | Yes (`<think>` blocks, default) | Yes (native) | ~31 t/s (Q6) |
+| Mistral Small 4 119B | Reasoning, multilingual (11 languages), tool use | Yes (per-request `reasoning_effort` = "none" / "high") | Yes (native) | ~TBD t/s (Q3_K_XL) |
 
 Retired models (2026-02-26) — settings preserved below for reference:
 
@@ -31,14 +32,14 @@ Qwen3.5 settings apply to **all Qwen3.5 models** (35B-A3B UD, 35B-A3B CL-Distill
 
 Active models:
 
-| Setting | GLM (general) | GLM (coding) | Qwen3.5 all (thinking) | Qwen3.5 all (coding) |
-|---------|--------------|-------------|------------------------|----------------------|
-| temperature | 1.0 | 0.7 | 1.0 | 0.6 |
-| top_p | 0.95 | 1.0 | 0.95 | 0.95 |
-| top_k | — | — | 20 | 20 |
-| min_p | 0.01 | 0.01 | 0.0 | 0.0 |
-| presence_penalty | — | — | 1.5 (client-side) | 0.0 |
-| system prompt | — | — | — | — |
+| Setting | GLM (general) | GLM (coding) | Qwen3.5 all (thinking) | Qwen3.5 all (coding) | Mistral Small 4 |
+|---------|--------------|-------------|------------------------|----------------------|-----------------|
+| temperature | 1.0 | 0.7 | 1.0 | 0.6 | 0.1 |
+| top_p | 0.95 | 1.0 | 0.95 | 0.95 | 1.0 |
+| top_k | — | — | 20 | 20 | — |
+| min_p | 0.01 | 0.01 | 0.0 | 0.0 | 0.0 |
+| presence_penalty | — | — | 1.5 (client-side) | 0.0 | — |
+| system prompt | — | — | — | — | — |
 
 Retired models (2026-02-26) — preserved for reference:
 
@@ -165,6 +166,31 @@ Source: [Qwen3.5 model card "Best Practices"](https://huggingface.co/Qwen/Qwen3.
 - Same DeltaNet hybrid architecture as Qwen3-Next — `--no-context-shift` required.
 
 **Server defaults (models.conf):** `--temp 1.0 --top-p 0.95 --top-k 20 --min-p 0` — matches the "thinking general" profile. Clients used for coding should override to `temp 0.6` and set `presence_penalty 0.0`. For general use, set `presence_penalty 1.5` client-side.
+
+## Mistral Small 4 119B UD-Q3_K_XL
+
+Source: [Mistral Small 4 model card](https://huggingface.co/mistralai/Mistral-Small-4B-Instruct-2503), [Mistral API docs](https://docs.mistral.ai)
+
+| Setting | All use cases |
+|---------|--------------|
+| temperature | 0.1 |
+| top_p | 1.0 |
+| top_k | — (not a Mistral API parameter) |
+| min_p | 0.0 |
+| presence_penalty | — (0.0 default, set client-side per request if needed) |
+
+**Important notes:**
+- **Mistral uses much lower temperature than other model families.** The model card uses `temperature=0.1` in every code example (instruction, tool calling, vision, reasoning). The Mistral API docs recommend adjusting either temperature or top_p, not both — with temp=0.1 already low, keep top_p at 1.0 (full vocabulary coverage).
+- **top_k is not a Mistral API parameter.** Do not set it. llama.cpp's default (40) has no practical effect when top_p=1.0 and temp is very low.
+- **min_p must be 0.0.** The Mistral API does not expose min_p — it is not part of their sampling pipeline. llama.cpp defaults to 0.05; override with `--min-p 0` server-side (already set in models.conf).
+- **Reasoning mode is per-request, not a server flag.** Set `reasoning_effort` in the API request body: `"none"` for fast responses, `"high"` for deep reasoning with `[THINK]/[/THINK]` blocks. This is a client-side parameter — configure it in your client or API call.
+- **Vision projector is available** (`mmproj-BF16.gguf`, 827 MB) but currently disabled — caused crash loop on startup. Do not enable without further investigation.
+- **Prompt processing is slow** (~18.4 t/s) due to CPU expert offload over PCIe. Long-context performance degrades further — ~4.7 t/s observed at 13K+ token KV cache fill.
+- **llama.cpp support:** PR #20649 merged. Requires `--jinja` for chat template. CUDA Flash Attention kernel for MLA (HKS=320, HVS=256) was not yet in the merged PR — may use a slower fallback attention path.
+- Architecture: mistral4 (deepseek2-based with MLA attention). MLA compresses the KV cache — V cache = 0 MiB. NOT DeltaNet, so `--no-context-shift` is not needed.
+- Multilingual: 11 languages. Apache 2.0 license.
+
+**Server defaults (models.conf):** `--temp 0.1 --top-p 1.0 --min-p 0` — matches official model card defaults. Clients should not need to override sampling parameters.
 
 ## For benchmarks (EvalPlus)
 

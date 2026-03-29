@@ -27,6 +27,7 @@ models/
 │   ├── README_modelcard_GLM-4.7-Flash.md
 │   ├── README_Qwen3.5-35B-A3B-GGUF.md
 │   ├── README_Qwen3.5-122B-A10B-GGUF.md
+│   ├── README_Mistral-Small-4-119B-2603-GGUF.md
 │   ├── README_modelcard_gpt-oss-120b-GGUF.md    # retired model
 │   ├── README_modelcard_qwen3_coder_next.md     # retired model
 │   └── README_Qwen3-Next-80B-A3B-Instruct-GGUF.md  # retired model
@@ -42,6 +43,9 @@ models/
 │   │   └── 122B/                 (~65 GiB, MoE 122B-A10B, UD-Q4_K_XL, 3 parts)
 │   └── Dense/
 │       └── 27B-UD-Q8_K_XL/      (~31 GiB, dense 27B, pending — CUDA crash)
+├── Mistral-Small-4-119b-2603/
+│   └── MOE/
+│       └── UD-Q3_K_XL/          (~54 GB, MoE 119B, 3 parts — active)
 ├── GPT-OSS-120b/                 # retired 2026-02-26 (files may remain on disk)
 │   └── gpt-oss-120b-F16.gguf        (61 GB, MoE 116.8B)
 ├── Qwen3-Coder-Next/             # retired 2026-02-26 (files may remain on disk)

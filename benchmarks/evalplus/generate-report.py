@@ -31,6 +31,7 @@ DISPLAY_NAMES = {
     "bench-qwen35-35b-cld-q8": "Qwen3.5-35B-A3B CL-Distill Q8_0",
     "bench-qwen35-122b-q4": "Qwen3.5-122B-A10B UD-Q4_K_XL",
     "bench-qwen35-27b-q6": "Qwen3.5-27B UD-Q6_K_XL (dense)",
+    "bench-mistral4-119b-q3": "Mistral Small 4 119B UD-Q3_K_XL",
 }
 
 # Map section IDs to reference model keys for delta calculation

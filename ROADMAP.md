@@ -12,6 +12,7 @@ Seven models are active in `models.conf` and selectable via `./start.sh` on a du
 - **Qwen3.5-35B-A3B CL-Distill Q8_0** — ~80 t/s, 262K context, highest quality 35B variant (MoE, DeltaNet)
 - **Qwen3.5-122B-A10B UD-Q4_K_XL** — ~18 t/s, 262K context, quality king, deep reasoning, coding (MoE, DeltaNet, 10B active)
 - **Qwen3.5-27B UD-Q8_K_XL** — pending (CUDA crash on first inference — illegal memory access on device 0, needs investigation)
+- **Mistral Small 4 119B UD-Q3_K_XL** — ~TBD t/s (Q3_K_XL, short prompts), 262K context, reasoning mode via per-request `reasoning_effort`, vision disabled (crash loop), multilingual 11 languages (MoE, MLA attention, mistral4 arch). Q4_K_XL tested first but removed — too slow (~16.65 t/s) and caused 5.2 GiB swap on 64 GB RAM. Q3_K_XL fits without swap (~61.9 GiB RAM). Benchmark pending.
 
 Three models retired 2026-02-26: GPT-OSS 120B, Qwen3-Coder-Next, Qwen3-Next-80B-A3B — replaced by the Qwen3.5 family after benchmark comparison. See the Done section below and `models.conf` for details.
 

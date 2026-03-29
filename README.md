@@ -166,6 +166,7 @@ All active models are defined in `models.conf`. Use the section ID with `./start
 | `qwen35-35b-cld-q8` | Qwen3.5-35B-A3B CL-Distill Q8_0 | MoE | ~80 t/s | 262K | Thinking, highest quality 35B — CL-distilled Q8 variant |
 | `qwen35-122b-q4` | Qwen3.5-122B-A10B UD-Q4_K_XL | MoE | ~18 t/s | 262K | Deep reasoning, quality, coding |
 | `qwen35-27b-q8` | Qwen3.5-27B UD-Q8_K_XL | Dense | ~20-30 t/s (est.) | 262K | Pending — CUDA crash under investigation |
+| `mistral4-119b-q3` | Mistral Small 4 119B UD-Q3_K_XL | MoE | ~TBD t/s | 262K | Reasoning, vision (disabled), tool use, multilingual |
 
 Three models were retired 2026-02-26 after benchmark comparison: GPT-OSS 120B (87.2% HumanEval+), Qwen3-Coder-Next (90.9%), and Qwen3-Next-80B-A3B (93.9%). Their profiles are commented out in `models.conf`.
 
@@ -173,19 +174,21 @@ Three models were retired 2026-02-26 after benchmark comparison: GPT-OSS 120B (8
 
 Recommended client-side settings per model. Most clients override server defaults, so set these explicitly.
 
-| Setting | GLM (general) | GLM (coding) | Qwen3.5 (thinking) | Qwen3.5 (coding) |
-|---------|--------------|-------------|---------------------|------------------|
-| temperature | 1.0 | 0.7 | 1.0 | 0.6 |
-| top_p | 0.95 | 1.0 | 0.95 | 0.95 |
-| top_k | — | — | 20 | 20 |
-| min_p | 0.01 | 0.01 | 0.0 | 0.0 |
-| presence_penalty | — | — | 1.5 (client-side) | 0.0 |
+| Setting | GLM (general) | GLM (coding) | Qwen3.5 (thinking) | Qwen3.5 (coding) | Mistral Small 4 |
+|---------|--------------|-------------|---------------------|------------------|-----------------|
+| temperature | 1.0 | 0.7 | 1.0 | 0.6 | 0.1 |
+| top_p | 0.95 | 1.0 | 0.95 | 0.95 | 1.0 |
+| top_k | — | — | 20 | 20 | — |
+| min_p | 0.01 | 0.01 | 0.0 | 0.0 | 0.0 |
+| presence_penalty | — | — | 1.5 (client-side) | 0.0 | — |
 
-Qwen3.5 settings apply to all Qwen3.5 models (35B-A3B UD, 35B-A3B CL-Distill, 27B, 122B-A10B). Full details and rationale: [docs/client-settings.md](docs/client-settings.md)
+Qwen3.5 settings apply to all Qwen3.5 models (35B-A3B UD, 35B-A3B CL-Distill, 27B, 122B-A10B). Mistral uses much lower temperature than other families — temp=0.1 is the model card default across all use cases. Full details and rationale: [docs/client-settings.md](docs/client-settings.md)
 
 ### Model-specific notes
 
 **Qwen3.5 thinking model:** All Qwen3.5 models generate `<think>` blocks by default. Thinking cannot be disabled with `/nothink` (unlike Qwen3) — use the chat template parameter `enable_thinking=false` if your client supports it. `presence_penalty=1.5` is strongly recommended for general use and must be set client-side.
+
+**Mistral Small 4 119B:** Reasoning mode is per-request via the `reasoning_effort` parameter (`"none"` or `"high"`). Uses `[THINK]/[/THINK]` tags internally. Vision projector is available but currently disabled (caused crash loop on startup). Prompt processing is slow (~18.4 t/s) due to CPU expert offload over PCIe. Speed for short prompts on Q3_K_XL is TBD.
 
 **Retired model notes (for reference):** GPT-OSS 120B, Qwen3-Coder-Next, and Qwen3-Next-80B-A3B were retired 2026-02-26. Historical sampler settings and notes for these models are preserved in [docs/client-settings.md](docs/client-settings.md).
 
@@ -353,7 +356,8 @@ See [ROADMAP.md](ROADMAP.md) for current status, completed milestones, and futur
 │   │   ├── CANDIDATES/            # Model cards for candidate models (not yet adopted)
 │   │   ├── README_modelcard_GLM-4.7-Flash.md
 │   │   ├── README_Qwen3.5-35B-A3B-GGUF.md
-│   │   └── README_Qwen3.5-122B-A10B-GGUF.md
+│   │   ├── README_Qwen3.5-122B-A10B-GGUF.md
+│   │   └── README_Mistral-Small-4-119B-2603-GGUF.md
 │   ├── GLM-4.7-Flash/
 │   ├── Qwen3.5/
 │   │   ├── MoE/
@@ -361,6 +365,9 @@ See [ROADMAP.md](ROADMAP.md) for current status, completed milestones, and futur
 │   │   │   └── 122B/              # Qwen3.5-122B-A10B UD-Q4_K_XL
 │   │   └── Dense/
 │   │       └── 27B-UD-Q8_K_XL/   # Qwen3.5-27B (pending — CUDA crash)
+│   └── Mistral-Small-4-119b-2603/
+│       └── MOE/
+│           └── UD-Q3_K_XL/       # Mistral Small 4 119B UD-Q3_K_XL (~54 GB, 3 parts)
 │   ├── GPT-OSS-120b/              # retired 2026-02-26
 │   ├── Qwen3-Coder-Next/          # retired 2026-02-26
 │   │   └── UD-Q5_K_XL/
